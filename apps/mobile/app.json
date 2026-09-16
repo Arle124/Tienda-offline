@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "El Cuaderno Digital",
+    "slug": "tienda-offline",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.tienda.offline"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permiso para escanear facturas y códigos de barras."
+        }
+      ]
+    ]
+  }
+}

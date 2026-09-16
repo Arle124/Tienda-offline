@@ -1,0 +1,16 @@
+{
+  "name": "tienda-offline",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sistema de gestión Offline-First para tienda de barrio",
+  "scripts": {
+    "mobile": "pnpm --filter mobile start",
+    "backend": "pnpm --filter backend dev",
+    "build:shared": "pnpm --filter @tienda/shared build",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

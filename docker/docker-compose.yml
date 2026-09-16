@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tienda_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: tienda_user
+      POSTGRES_PASSWORD: tienda_secure_password
+      POSTGRES_DB: tienda_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tienda_user -d tienda_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../
+      dockerfile: apps/backend/Dockerfile
+    container_name: tienda_backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://tienda_user:tienda_secure_password@postgres:5432/tienda_db
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
+    driver: local

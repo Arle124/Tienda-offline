@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.expo/
+graphify-out/
+.env
+*.log
+.DS_Store
