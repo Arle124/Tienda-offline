@@ -65,3 +65,6 @@
   * Selección de medio de pago al registrar abonos en [DebtorsScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/debtors/DebtorsScreen.tsx) (`💵 Efectivo en Caja` vs `📲 Nequi / Transf.`).
   * Distinción clara en el Cierre de Caja ([OwnerScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/owner/OwnerScreen.tsx)): el arqueo físico solo calcula el dinero de monedas y billetes en cajón (`Ventas Efectivo + Abonos Efectivo − Salidas`), mientras que el dinero digital se agrupa en una tarjeta propia para verificar contra el saldo en la app bancaria.
   * Reportes Excel (.xlsx) actualizados con secciones separadas para efectivo físico y pagos digitales.
+* **Actualización Integral del README del Proyecto:**
+  * Documentación completa del monorepo, filosofía offline-first (0ms latencia, SQLite local), catálogo exhaustivo de funcionalidades por pantalla, guía de comandos pnpm y enlaces directos a la documentación interna.
+
