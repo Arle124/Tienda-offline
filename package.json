@@ -5,6 +5,8 @@
   "description": "Sistema de gestión Offline-First para tienda de barrio",
   "scripts": {
     "mobile": "pnpm --filter mobile start",
+    "mobile:web": "pnpm --filter mobile web",
+    "mobile:tunnel": "pnpm --filter mobile tunnel",
     "backend": "pnpm --filter backend dev",
     "build:shared": "pnpm --filter @tienda/shared build",
     "docker:up": "docker compose -f docker/docker-compose.yml up -d",

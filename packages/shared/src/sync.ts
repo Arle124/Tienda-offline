@@ -6,6 +6,7 @@ import type {
   DebtRecord,
   DebtPayment,
   SupplierBill,
+  StoreSettings,
 } from './types.js';
 
 export type SyncStatus = 'synced' | 'pending_insert' | 'pending_update';
@@ -25,6 +26,7 @@ export interface SyncPushPayload {
   debts: SyncPayloadGroup<DebtRecord>;
   payments: SyncPayloadGroup<DebtPayment>;
   supplier_bills: SyncPayloadGroup<SupplierBill>;
+  settings?: SyncPayloadGroup<StoreSettings>;
 }
 
 export interface SyncPullRequest {
@@ -41,6 +43,7 @@ export interface SyncPullResponse {
     debts: DebtRecord[];
     payments: DebtPayment[];
     supplier_bills: SupplierBill[];
+    settings?: StoreSettings[];
   };
 }
 

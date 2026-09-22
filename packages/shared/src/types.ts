@@ -1,10 +1,19 @@
 export type UUID = string;
 
+export type UserRole = 'tendera' | 'duena';
+
 export interface BaseEntity {
   id: UUID;
   created_at: string;
   updated_at: string;
   is_deleted: boolean;
+  created_by?: UserRole;
+  device_id?: string;
+}
+
+export interface StoreSettings extends BaseEntity {
+  store_name: string;
+  owner_pin_hash: string;
 }
 
 export interface Customer extends BaseEntity {

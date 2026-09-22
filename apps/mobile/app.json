@@ -4,7 +4,6 @@
     "slug": "tienda-offline",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -26,7 +25,9 @@
         {
           "cameraPermission": "Permiso para escanear facturas y códigos de barras."
         }
-      ]
+      ],
+      "expo-sqlite",
+      "expo-sharing"
     ]
   }
 }
