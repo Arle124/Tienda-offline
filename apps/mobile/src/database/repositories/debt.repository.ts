@@ -13,6 +13,7 @@ export interface RecordPaymentParams {
   customerId: string;
   debtId?: string;
   amountPaid: number;
+  paymentMethod?: 'cash' | 'transfer';
   notes?: string;
   createdBy?: UserRole;
   deviceId?: string;
@@ -23,6 +24,7 @@ export interface CustomerLedgerItem {
   type: 'debt' | 'payment';
   date: string;
   amount: number;
+  paymentMethod?: 'cash' | 'transfer';
   notes?: string;
   saleNumber?: number;
   items?: Array<{
@@ -94,6 +96,7 @@ export class DebtRepository {
         type: 'payment',
         date: p.created_at,
         amount: p.amount_paid,
+        paymentMethod: p.payment_method || 'cash',
         notes: p.notes,
       });
     }
@@ -114,6 +117,7 @@ export class DebtRepository {
         customer_id: params.customerId,
         debt_id: params.debtId,
         amount_paid: Number(params.amountPaid),
+        payment_method: params.paymentMethod || 'cash',
         notes: params.notes?.trim() || undefined,
         created_at: now,
         updated_at: now,

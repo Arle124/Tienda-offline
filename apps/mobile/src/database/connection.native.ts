@@ -35,6 +35,20 @@ export class SQLiteDriver implements IDatabaseDriver {
     if (!this.db) {
       this.db = await SQLite.openDatabaseAsync('tienda.db');
       await this.db.execAsync(SQLITE_SCHEMA);
+      try {
+        await this.db.execAsync(
+          'ALTER TABLE sales ADD COLUMN transfer_amount REAL NOT NULL DEFAULT 0.00;'
+        );
+      } catch {
+        // Columna ya existe
+      }
+      try {
+        await this.db.execAsync(
+          "ALTER TABLE debt_payments ADD COLUMN payment_method TEXT NOT NULL DEFAULT 'cash';"
+        );
+      } catch {
+        // Columna ya existe
+      }
     }
   }
 

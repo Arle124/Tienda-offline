@@ -16,6 +16,7 @@ import {
   UserRole,
   saleRepository,
   customerRepository,
+  supplierRepository,
 } from '../../database';
 
 interface PosScreenProps {
@@ -49,6 +50,12 @@ export function PosScreen({
   const [freeItemModalVisible, setFreeItemModalVisible] = useState(false);
   const [freeItemName, setFreeItemName] = useState('');
   const [freeItemPrice, setFreeItemPrice] = useState('');
+
+  // Modal para registrar salida de dinero / pago proveedor
+  const [outflowModalVisible, setOutflowModalVisible] = useState(false);
+  const [outflowAmount, setOutflowAmount] = useState('');
+  const [outflowConcept, setOutflowConcept] = useState('');
+  const [outflowFromDrawer, setOutflowFromDrawer] = useState(true);
 
   // Modal para crear cliente rápido si no está en la lista
   const [quickCustomerModal, setQuickCustomerModal] = useState(false);
@@ -129,6 +136,48 @@ export function PosScreen({
     setFreeItemModalVisible(false);
   };
 
+  const handleSaveOutflow = async () => {
+    const amount = parseFloat(outflowAmount.replace(/[^0-9]/g, ''));
+    if (isNaN(amount) || amount <= 0) {
+      const msg = 'Ingresa un monto válido para la salida de dinero.';
+      if (Platform.OS === 'web') alert(msg);
+      else Alert.alert('Atención', msg);
+      return;
+    }
+
+    if (!outflowConcept.trim()) {
+      const msg = 'Indica el proveedor o concepto (ej. Bimbo, Panadería, Bolsas).';
+      if (Platform.OS === 'web') alert(msg);
+      else Alert.alert('Atención', msg);
+      return;
+    }
+
+    try {
+      await supplierRepository.createBill({
+        supplierName: outflowConcept.trim(),
+        totalAmount: amount,
+        isPaid: outflowFromDrawer,
+        createdBy: role,
+        notes: outflowFromDrawer
+          ? 'Pagado en efectivo de la caja'
+          : 'Factura pendiente de pago',
+      });
+
+      setOutflowAmount('');
+      setOutflowConcept('');
+      setOutflowModalVisible(false);
+      await onSaleCompleted();
+
+      const msg = `✅ Salida de $${amount.toLocaleString()} registrada (${outflowConcept.trim()}).`;
+      if (Platform.OS === 'web') alert(msg);
+      else Alert.alert('Salida Registrada', msg);
+    } catch (err: any) {
+      const msg = `Error al registrar salida: ${err.message}`;
+      if (Platform.OS === 'web') alert(msg);
+      else Alert.alert('Error', msg);
+    }
+  };
+
   const handleQuickCreateCustomer = async () => {
     if (!newCustName.trim()) {
       const msg = 'El nombre del cliente es obligatorio';
@@ -185,6 +234,40 @@ export function PosScreen({
       else Alert.alert('Venta Registrada', message);
     } catch (err: any) {
       const msg = `Error al registrar venta: ${err.message}`;
+      if (Platform.OS === 'web') alert(msg);
+      else Alert.alert('Error', msg);
+    }
+  };
+
+  const handleTransferSale = async () => {
+    if (cart.length === 0) return;
+
+    try {
+      await saleRepository.createSale({
+        paymentType: 'transfer',
+        totalAmount,
+        cashAmount: 0,
+        transferAmount: totalAmount,
+        debtAmount: 0,
+        notes: 'Pago por Nequi / Transferencia',
+        createdBy: role,
+        items: cart.map((item) => ({
+          productId: item.product.id.startsWith('custom_') ? undefined : item.product.id,
+          productName: item.product.name,
+          quantity: item.quantity,
+          unitPrice: item.product.price,
+          subtotal: item.product.price * item.quantity,
+        })),
+      });
+
+      const message = `✅ Venta Nequi/Transferencia registrada ($${totalAmount.toLocaleString()}). Dinero en cuenta digital.`;
+      clearCart();
+      await onSaleCompleted();
+
+      if (Platform.OS === 'web') alert(message);
+      else Alert.alert('Venta Digital Registrada', message);
+    } catch (err: any) {
+      const msg = `Error al registrar venta por Nequi: ${err.message}`;
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Error', msg);
     }
@@ -252,6 +335,12 @@ export function PosScreen({
           onPress={() => setFreeItemModalVisible(true)}
         >
           <Text style={styles.freeItemButtonText}>⚡ Monto Libre</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.outflowButton}
+          onPress={() => setOutflowModalVisible(true)}
+        >
+          <Text style={styles.outflowButtonText}>💸 Salida</Text>
         </TouchableOpacity>
       </View>
 
@@ -391,12 +480,22 @@ export function PosScreen({
             </View>
           )}
 
-          {/* Botón Principal: Cobro Efectivo */}
-          <TouchableOpacity style={styles.cashSaleButton} onPress={handleCashSale}>
-            <Text style={styles.cashSaleButtonText}>
-              💵 Cobrar Efectivo (${totalAmount.toLocaleString()})
-            </Text>
-          </TouchableOpacity>
+          {/* Botones Principales de Cobro: Efectivo vs Nequi / Transferencia */}
+          <View style={styles.checkoutActionsRow}>
+            <TouchableOpacity style={styles.cashSaleButton} onPress={handleCashSale}>
+              <Text style={styles.cashSaleButtonText}>
+                💵 Efectivo (${totalAmount.toLocaleString()})
+              </Text>
+              <Text style={styles.checkoutSubtext}>Entra al cajón físico</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.nequiSaleButton} onPress={handleTransferSale}>
+              <Text style={styles.nequiSaleButtonText}>
+                📲 Nequi / Transf. (${totalAmount.toLocaleString()})
+              </Text>
+              <Text style={styles.checkoutSubtextNequi}>Entra a tu cuenta</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Sección de Fiar al Cuaderno */}
           <View style={styles.fiarBox}>
@@ -557,6 +656,86 @@ export function PosScreen({
           </View>
         </View>
       </Modal>
+
+      {/* Modal para Salida de Dinero / Pago a Proveedor */}
+      <Modal visible={outflowModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>💸 Registrar Salida de Dinero</Text>
+            <Text style={styles.modalDesc}>
+              Registra pagos a proveedores (Bimbo, Postobón, etc.) o gastos para que el arqueo de caja cuadre exacto.
+            </Text>
+
+            <Text style={styles.inputLabel}>¿Cuánto dinero salió? *</Text>
+            <TextInput
+              style={styles.priceBigInput}
+              keyboardType="numeric"
+              placeholder="$ 0"
+              value={outflowAmount}
+              onChangeText={setOutflowAmount}
+              autoFocus
+            />
+
+            <Text style={styles.inputLabel}>Proveedor o Concepto *</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej: Bimbo, Coca-Cola, Bolsas, Domicilio..."
+              value={outflowConcept}
+              onChangeText={setOutflowConcept}
+            />
+
+            <View style={styles.outflowSourceRow}>
+              <TouchableOpacity
+                style={[
+                  styles.outflowSourceOption,
+                  outflowFromDrawer && styles.outflowSourceActive,
+                ]}
+                onPress={() => setOutflowFromDrawer(true)}
+              >
+                <Text
+                  style={[
+                    styles.outflowSourceText,
+                    outflowFromDrawer && styles.outflowSourceTextActive,
+                  ]}
+                >
+                  💵 Salió de la Caja
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.outflowSourceOption,
+                  !outflowFromDrawer && styles.outflowSourceActive,
+                ]}
+                onPress={() => setOutflowFromDrawer(false)}
+              >
+                <Text
+                  style={[
+                    styles.outflowSourceText,
+                    !outflowFromDrawer && styles.outflowSourceTextActive,
+                  ]}
+                >
+                  ⏳ Pendiente por Pagar
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setOutflowModalVisible(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirmBtn, { backgroundColor: '#DC2626' }]}
+                onPress={handleSaveOutflow}
+              >
+                <Text style={styles.modalConfirmText}>Registrar Salida</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -588,7 +767,7 @@ const styles = StyleSheet.create({
   },
   freeItemButton: {
     backgroundColor: '#3B82F6',
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
@@ -597,6 +776,47 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 13,
+  },
+  outflowButton: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  outflowButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  outflowSourceRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  outflowSourceOption: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+  },
+  outflowSourceActive: {
+    borderColor: '#DC2626',
+    backgroundColor: '#FEF2F2',
+  },
+  outflowSourceText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  outflowSourceTextActive: {
+    color: '#DC2626',
+    fontWeight: 'bold',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -831,17 +1051,47 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#854D0E',
   },
+  checkoutActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
   cashSaleButton: {
+    flex: 1,
     backgroundColor: '#16A34A',
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',
     elevation: 2,
   },
   cashSaleButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
+  },
+  checkoutSubtext: {
+    color: '#DCFCE7',
+    fontSize: 11,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  nequiSaleButton: {
+    flex: 1,
+    backgroundColor: '#4F46E5',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    elevation: 2,
+  },
+  nequiSaleButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  checkoutSubtextNequi: {
+    color: '#E0E7FF',
+    fontSize: 11,
+    marginTop: 2,
+    fontWeight: '600',
   },
   fiarBox: {
     marginTop: 16,

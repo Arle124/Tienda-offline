@@ -14,15 +14,17 @@ import {
   UserRole,
   settingsRepository,
   saleRepository,
+  supplierRepository,
   LocalCustomer,
   LocalProduct,
   TodaySalesSummary,
+  LocalSupplierBill,
 } from '../../database';
 import {
-  shareOrDownloadCsv,
-  generateSalesCsv,
-  generateDebtorsCsv,
-  generateInventoryCsv,
+  exportSalesToXlsx,
+  exportDebtorsToXlsx,
+  exportInventoryToXlsx,
+  exportCompleteStoreWorkbookToXlsx,
 } from '../../utils/excel';
 
 interface OwnerScreenProps {
@@ -45,6 +47,8 @@ export function OwnerScreen({
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [todaySummary, setTodaySummary] = useState<TodaySalesSummary | null>(null);
+  const [todayOutflows, setTodayOutflows] = useState<number>(0);
+  const [billsPaidToday, setBillsPaidToday] = useState<LocalSupplierBill[]>([]);
   const [isExporting, setIsExporting] = useState(false);
 
   // Cuadre / Arqueo de caja
@@ -60,6 +64,9 @@ export function OwnerScreen({
     try {
       const summary = await saleRepository.getTodaySummary();
       setTodaySummary(summary);
+      const outflows = await supplierRepository.getTodayPaidOutflows();
+      setTodayOutflows(outflows.totalPaidToday);
+      setBillsPaidToday(outflows.billsPaidToday);
     } catch (err) {
       console.error('Error cargando resumen de finanzas:', err);
     }
@@ -112,11 +119,9 @@ export function OwnerScreen({
     setIsExporting(true);
     try {
       const { sales, items } = await saleRepository.getAllSalesAndItems();
-      const csv = generateSalesCsv(sales, items, customers);
-      const todayStr = new Date().toISOString().slice(0, 10);
-      await shareOrDownloadCsv(`Reporte_Ventas_${todayStr}.csv`, csv);
+      await exportSalesToXlsx(sales, items, customers);
     } catch (err: any) {
-      const msg = `Error al exportar ventas: ${err.message}`;
+      const msg = `Error al exportar ventas a Excel: ${err.message}`;
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Error', msg);
     } finally {
@@ -127,11 +132,9 @@ export function OwnerScreen({
   const handleExportDebtors = async () => {
     setIsExporting(true);
     try {
-      const csv = generateDebtorsCsv(customers);
-      const todayStr = new Date().toISOString().slice(0, 10);
-      await shareOrDownloadCsv(`Libreta_Fiados_${todayStr}.csv`, csv);
+      await exportDebtorsToXlsx(customers);
     } catch (err: any) {
-      const msg = `Error al exportar fiados: ${err.message}`;
+      const msg = `Error al exportar fiados a Excel: ${err.message}`;
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Error', msg);
     } finally {
@@ -142,11 +145,36 @@ export function OwnerScreen({
   const handleExportInventory = async () => {
     setIsExporting(true);
     try {
-      const csv = generateInventoryCsv(products);
-      const todayStr = new Date().toISOString().slice(0, 10);
-      await shareOrDownloadCsv(`Inventario_Tienda_${todayStr}.csv`, csv);
+      await exportInventoryToXlsx(products);
     } catch (err: any) {
-      const msg = `Error al exportar inventario: ${err.message}`;
+      const msg = `Error al exportar inventario a Excel: ${err.message}`;
+      if (Platform.OS === 'web') alert(msg);
+      else Alert.alert('Error', msg);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportCompleteWorkbook = async () => {
+    setIsExporting(true);
+    try {
+      const { sales, items } = await saleRepository.getAllSalesAndItems();
+      await exportCompleteStoreWorkbookToXlsx({
+        sales,
+        items,
+        customers,
+        products,
+        todayCashSales: todaySummary?.totalCashSales || 0,
+        todayTransferSales: todaySummary?.totalTransferSales || 0,
+        todayCashPaymentsReceived: todaySummary?.totalCashPaymentsReceived || 0,
+        todayTransferPaymentsReceived: todaySummary?.totalTransferPaymentsReceived || 0,
+        todayDebtSales: todaySummary?.totalDebtSales || 0,
+        totalStreetDebt,
+        todayOutflows,
+        billsPaidToday,
+      });
+    } catch (err: any) {
+      const msg = `Error al exportar libro completo a Excel: ${err.message}`;
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Error', msg);
     } finally {
@@ -159,7 +187,9 @@ export function OwnerScreen({
     0
   );
 
-  const theoreticalCashInDrawer = todaySummary ? todaySummary.totalRevenueToday : 0;
+  const theoreticalCashInDrawer = todaySummary
+    ? todaySummary.totalPhysicalCashInDrawer - todayOutflows
+    : 0;
   const countedNum = parseFloat(countedCash.replace(/[^0-9]/g, ''));
   const cashDifference = !isNaN(countedNum) ? countedNum - theoreticalCashInDrawer : null;
 
@@ -215,20 +245,61 @@ export function OwnerScreen({
 
       {/* Métricas Principales del Día */}
       <View style={styles.metricsGrid}>
-        {/* Efectivo en Caja */}
-        <View style={[styles.kpiCard, { backgroundColor: '#DCFCE7' }]}>
-          <Text style={styles.kpiLabel}>💵 Efectivo que debe haber en Caja Hoy</Text>
+        {/* Efectivo Físico en Cajón (Arqueo) */}
+        <View style={[styles.kpiCard, { backgroundColor: '#DCFCE7', borderColor: '#86EFAC', borderWidth: 1 }]}>
+          <Text style={styles.kpiLabel}>💵 Efectivo Físico que debe haber en Caja Hoy</Text>
           <Text style={[styles.kpiValue, { color: '#166534' }]}>
             ${theoreticalCashInDrawer.toLocaleString()}
           </Text>
           <Text style={styles.kpiSub}>
-            (Ventas de contado: ${todaySummary?.totalCashSales.toLocaleString() || '0'} + Abonos de fiados recibidos: $
-            {todaySummary?.totalPaymentsReceived.toLocaleString() || '0'})
+            Contado: ${todaySummary?.totalCashSales.toLocaleString() || '0'} + Abonos Efectivo: $
+            {todaySummary?.totalCashPaymentsReceived.toLocaleString() || '0'}
+            {todayOutflows > 0
+              ? ` − Proveedores: -$${todayOutflows.toLocaleString()}`
+              : ''}
+          </Text>
+          <Text style={{ fontSize: 11, color: '#15803D', marginTop: 4, fontWeight: '600' }}>
+            🎯 Este es el dinero que debes contar en billetes y monedas en el cajón.
           </Text>
         </View>
 
+        {/* Dinero Digital en Nequi / Bancos */}
+        <View style={[styles.kpiCard, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE', borderWidth: 1, marginTop: 10 }]}>
+          <Text style={[styles.kpiLabel, { color: '#3730A3' }]}>📲 Dinero Digital en Nequi / Bancos Hoy</Text>
+          <Text style={[styles.kpiValue, { color: '#4338CA' }]}>
+            ${(todaySummary?.totalDigitalInNequi || 0).toLocaleString()}
+          </Text>
+          <Text style={[styles.kpiSub, { color: '#4F46E5' }]}>
+            Ventas Nequi: ${todaySummary?.totalTransferSales.toLocaleString() || '0'} + Abonos Nequi: $
+            {todaySummary?.totalTransferPaymentsReceived.toLocaleString() || '0'}
+          </Text>
+          <Text style={{ fontSize: 11, color: '#6366F1', marginTop: 4, fontWeight: '600' }}>
+            📱 Entró directo a tu aplicación Nequi / Bancolombia. No está en el cajón.
+          </Text>
+        </View>
+
+        {/* Resumen General de Ingresos */}
+        <View style={[styles.kpiCard, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderWidth: 1, marginTop: 10 }]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View>
+              <Text style={[styles.kpiLabel, { color: '#475569' }]}>🌟 Total Ingresos Recaudados Hoy</Text>
+              <Text style={[styles.kpiValue, { color: '#0F172A', fontSize: 20 }]}>
+                ${(todaySummary?.totalRevenueToday || 0).toLocaleString()}
+              </Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ fontSize: 12, color: '#166534', fontWeight: 'bold' }}>
+                💵 Caja: ${todaySummary?.totalPhysicalCashInDrawer.toLocaleString() || '0'}
+              </Text>
+              <Text style={{ fontSize: 12, color: '#4338CA', fontWeight: 'bold', marginTop: 2 }}>
+                📲 Nequi: ${todaySummary?.totalDigitalInNequi.toLocaleString() || '0'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* Fiados de Hoy vs Cartera Total */}
-        <View style={styles.kpiRow}>
+        <View style={[styles.kpiRow, { marginTop: 10 }]}>
           <View style={[styles.kpiCardMini, { backgroundColor: '#FEF9C3' }]}>
             <Text style={styles.kpiMiniLabel}>📝 Fiado Hoy</Text>
             <Text style={[styles.kpiMiniValue, { color: '#854D0E' }]}>
@@ -243,6 +314,20 @@ export function OwnerScreen({
             </Text>
           </View>
         </View>
+
+        {/* Detalle de Salidas / Proveedores de Hoy */}
+        {todayOutflows > 0 && (
+          <View style={[styles.kpiCardMini, { backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1, marginTop: 10, width: '100%' }]}>
+            <Text style={[styles.kpiMiniLabel, { color: '#991B1B', fontWeight: 'bold', fontSize: 13 }]}>
+              🚚 Salidas de Caja a Proveedores: -${todayOutflows.toLocaleString()}
+            </Text>
+            {billsPaidToday.map((b) => (
+              <Text key={b.id} style={{ fontSize: 12, color: '#7F1D1D', marginTop: 3 }}>
+                • {b.supplier_name}: ${b.total_amount.toLocaleString()} ({b.notes || 'Pagado de caja'})
+              </Text>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Herramienta: Arqueo / Cuadre de Caja */}
@@ -289,14 +374,31 @@ export function OwnerScreen({
         )}
       </View>
 
-      {/* Reportes para Contabilidad / Excel / DIAN */}
+      {/* Reportes para Contabilidad / Microsoft Excel */}
       <View style={styles.sectionBox}>
-        <Text style={styles.sectionTitle}>📊 Reportes en Excel / CSV</Text>
+        <Text style={styles.sectionTitle}>📊 Reportes en Microsoft Excel (.xlsx)</Text>
         <Text style={styles.sectionSubtitle}>
-          Genera reportes para contabilidad, DIAN o respaldos. Puedes compartirlos directamente por WhatsApp o descargarlos.
+          Hojas de cálculo reales con tablas organizadas, anchos de columna automáticos y formato de moneda. Puedes abrirlas en Excel o enviarlas por WhatsApp.
         </Text>
 
         <View style={styles.reportButtonsList}>
+          {/* Libro Maestro Integral */}
+          <TouchableOpacity
+            style={[styles.reportBtn, { borderColor: '#7C3AED', backgroundColor: '#F5F3FF' }]}
+            onPress={handleExportCompleteWorkbook}
+            disabled={isExporting}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.reportBtnTitle, { color: '#6D28D9' }]}>
+                👑 Libro Maestro Completo (.xlsx)
+              </Text>
+              <Text style={styles.reportBtnDesc}>
+                Las 4 hojas en un solo archivo: Cierre de Caja, Libreta de Fiados, Ventas e Inventario.
+              </Text>
+            </View>
+            <Text style={styles.reportBtnIcon}>📗</Text>
+          </TouchableOpacity>
+
           {/* Reporte de Ventas */}
           <TouchableOpacity
             style={[styles.reportBtn, { borderColor: '#16A34A', backgroundColor: '#F0FDF4' }]}
@@ -305,7 +407,7 @@ export function OwnerScreen({
           >
             <View style={{ flex: 1 }}>
               <Text style={[styles.reportBtnTitle, { color: '#15803D' }]}>
-                📈 Reporte de Ventas Detallado
+                📈 Reporte de Ventas (.xlsx)
               </Text>
               <Text style={styles.reportBtnDesc}>
                 Todas las ventas, cobros de contado, créditos fiados y desglose de artículos.
@@ -322,7 +424,7 @@ export function OwnerScreen({
           >
             <View style={{ flex: 1 }}>
               <Text style={[styles.reportBtnTitle, { color: '#B45309' }]}>
-                📒 Libreta de Fiados (Cartera)
+                📒 Libreta de Fiados (.xlsx)
               </Text>
               <Text style={styles.reportBtnDesc}>
                 Lista de todos los vecinos, teléfonos, deudas pendientes y estado de cuenta.
@@ -339,7 +441,7 @@ export function OwnerScreen({
           >
             <View style={{ flex: 1 }}>
               <Text style={[styles.reportBtnTitle, { color: '#1D4ED8' }]}>
-                📦 Inventario y Valorización
+                📦 Inventario y Valorización (.xlsx)
               </Text>
               <Text style={styles.reportBtnDesc}>
                 Existencias, costos de compra, precios de venta y capital total invertido.

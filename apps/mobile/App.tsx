@@ -14,6 +14,8 @@ import {
   productRepository,
   saleRepository,
   customerRepository,
+  debtRepository,
+  supplierRepository,
   settingsRepository,
   LocalProduct,
   LocalCustomer,
@@ -42,14 +44,23 @@ export default function App() {
 
   const loadData = useCallback(async () => {
     try {
-      const [allProds, allCusts, pendingSales, pendingProds, pendingCusts] =
-        await Promise.all([
-          productRepository.getAll(),
-          customerRepository.getAll(),
-          saleRepository.getPendingSync(),
-          productRepository.getPendingSync(),
-          customerRepository.getPendingSync(),
-        ]);
+      const [
+        allProds,
+        allCusts,
+        pendingSales,
+        pendingProds,
+        pendingCusts,
+        pendingDebts,
+        pendingSuppliers,
+      ] = await Promise.all([
+        productRepository.getAll(),
+        customerRepository.getAll(),
+        saleRepository.getPendingSync(),
+        productRepository.getPendingSync(),
+        customerRepository.getPendingSync(),
+        debtRepository.getPendingSync(),
+        supplierRepository.getPendingSync(),
+      ]);
 
       setProducts(allProds);
       setCustomers(allCusts);
@@ -57,7 +68,10 @@ export default function App() {
         pendingSales.sales.length +
           pendingSales.items.length +
           pendingProds.length +
-          pendingCusts.length
+          pendingCusts.length +
+          pendingDebts.debts.length +
+          pendingDebts.payments.length +
+          pendingSuppliers.length
       );
     } catch (err) {
       console.error('Error cargando datos locales:', err);

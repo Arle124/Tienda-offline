@@ -36,7 +36,7 @@ export interface Product extends BaseEntity {
   image_uri?: string;
 }
 
-export type PaymentType = 'cash' | 'debt' | 'mixed';
+export type PaymentType = 'cash' | 'transfer' | 'debt' | 'mixed';
 
 export interface Sale extends BaseEntity {
   sale_number: number;
@@ -44,6 +44,7 @@ export interface Sale extends BaseEntity {
   payment_type: PaymentType;
   total_amount: number;
   cash_amount: number;
+  transfer_amount?: number;
   debt_amount: number;
   notes?: string;
 }
@@ -72,6 +73,7 @@ export interface DebtPayment extends BaseEntity {
   customer_id: UUID;
   debt_id?: UUID;
   amount_paid: number;
+  payment_method?: 'cash' | 'transfer';
   notes?: string;
 }
 

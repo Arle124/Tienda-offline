@@ -47,9 +47,21 @@
 * **Actualización a Expo SDK 57 & Safe Area Nativo:**
   * Migración de dependencias a Expo SDK 57 (`react-native` 0.86, `react` 19.2, `expo-sqlite` 57).
   * Migración a `react-native-safe-area-context` eliminando la advertencia de `SafeAreaView has been deprecated`.
-* **Motor de Reportes en Excel / CSV y Compartir por Celular:**
-  * Utilidad `excel.ts` con soporte para UTF-8 BOM y delimitadores `;` compatibles con Excel en español.
-  * Reporte detallado de ventas con desglose de artículos y totales.
-  * Reporte de cartera y libreta de fiados con saldos y estados.
-  * Reporte de inventario con valorización total de la mercancía (capital invertido vs precio de venta).
-  * Integración con `expo-sharing` para compartir los archivos generados directamente por WhatsApp, Gmail o guardar en el dispositivo.
+* **Motor de Reportes en Excel Nativo (.xlsx) con Formato Humano:**
+  * Reemplazo del CSV crudo por libros reales `.xlsx` mediante la librería `xlsx` (SheetJS).
+  * Tablas con anchos de columna automáticos (`!cols`) para evitar cortes de texto (`###`).
+  * Celdas con tipado numérico nativo y formato de moneda (`"$"#,##0`), permitiendo aplicar fórmulas como `SUMA()` o filtros directamente en Excel y Google Sheets.
+  * Exportación de reportes independientes (Ventas, Fiados, Inventario) y del **Libro Maestro Integral** con 4 pestañas en un solo archivo: *Cierre de Caja*, *Libreta de Fiados*, *Ventas* e *Inventario*.
+  * Integración con `expo-sharing` para compartir el archivo `.xlsx` directamente por WhatsApp, correo o guardarlo en el celular o PC.
+* **Control de Salidas de Caja y Pagos a Proveedores:**
+  * Repositorio [supplier.repository.ts](file:///home/asher/tienda-offline/apps/mobile/src/database/repositories/supplier.repository.ts) con almacenamiento local offline en `supplier_bills`.
+  * Botón ágil `💸 Salida` en el mostrador ([PosScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/pos/PosScreen.tsx)) para registrar en 2 segundos pagos a camiones distribuidores (Bimbo, Coca-Cola) o compras de insumos (bolsas).
+  * Descuento automático de las salidas en el Arqueo de Caja del modo Dueña ([OwnerScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/owner/OwnerScreen.tsx)), mostrando el desglose exacto de pagos a repartidores del día.
+* **Envío de Estado de Cuenta por WhatsApp en 1 Clic:**
+  * Botón `📲 Enviar Cuenta por WhatsApp` en el Cuaderno de Fiados ([DebtorsScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/debtors/DebtorsScreen.tsx)).
+  * Mensaje pre-redactado y amigable que incluye el saldo total y el desglose de las últimas compras fiadas con lista de productos y abonos recibidos.
+* **Separación de Dinero Físico en Cajón vs Dinero Digital (Nequi / Transferencias):**
+  * Soporte integral para cobros por Nequi/Transferencia en [PosScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/pos/PosScreen.tsx) (`payment_type: 'transfer'`) con botón directo `📲 Nequi / Transf.`.
+  * Selección de medio de pago al registrar abonos en [DebtorsScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/debtors/DebtorsScreen.tsx) (`💵 Efectivo en Caja` vs `📲 Nequi / Transf.`).
+  * Distinción clara en el Cierre de Caja ([OwnerScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/owner/OwnerScreen.tsx)): el arqueo físico solo calcula el dinero de monedas y billetes en cajón (`Ventas Efectivo + Abonos Efectivo − Salidas`), mientras que el dinero digital se agrupa en una tarjeta propia para verificar contra el saldo en la app bancaria.
+  * Reportes Excel (.xlsx) actualizados con secciones separadas para efectivo físico y pagos digitales.

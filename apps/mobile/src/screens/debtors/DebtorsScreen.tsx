@@ -10,6 +10,7 @@ import {
   Alert,
   Platform,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import {
   LocalCustomer,
@@ -38,6 +39,7 @@ export function DebtorsScreen({
   // Modal para registrar abono
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer'>('cash');
   const [paymentNotes, setPaymentNotes] = useState('');
 
   // Modal para registrar nuevo cliente
@@ -80,13 +82,16 @@ export function DebtorsScreen({
       await debtRepository.recordPayment({
         customerId: selectedCustomer.id,
         amountPaid: amount,
+        paymentMethod,
         notes: paymentNotes.trim() || undefined,
         createdBy: role,
       });
 
-      const msg = `✅ Abono de $${amount.toLocaleString()} registrado con éxito para ${selectedCustomer.name}.`;
+      const methodTxt = paymentMethod === 'transfer' ? 'por Nequi/Transferencia' : 'en efectivo';
+      const msg = `✅ Abono de $${amount.toLocaleString()} (${methodTxt}) registrado para ${selectedCustomer.name}.`;
       setPaymentAmount('');
       setPaymentNotes('');
+      setPaymentMethod('cash');
       setPaymentModalVisible(false);
 
       await onRefreshData();
@@ -102,6 +107,71 @@ export function DebtorsScreen({
       const msg = `Error al registrar abono: ${err.message}`;
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Error', msg);
+    }
+  };
+
+  const handleShareWhatsApp = async () => {
+    if (!selectedCustomer) return;
+
+    const customerName = selectedCustomer.name;
+    const debtStr = (selectedCustomer.current_debt || 0).toLocaleString();
+
+    let movementsText = '';
+    if (ledgerItems.length > 0) {
+      const topMovements = ledgerItems.slice(0, 5);
+      movementsText = topMovements
+        .map((m) => {
+          const dateStr = new Date(m.date).toLocaleDateString([], {
+            day: '2-digit',
+            month: '2-digit',
+          });
+          if (m.type === 'debt') {
+            const itemsSummary =
+              m.items && m.items.length > 0
+                ? `\n   ${m.items.map((i) => `• ${i.quantity}x ${i.productName}`).join('\n   ')}`
+                : '';
+            return `📅 ${dateStr} - Compra Fiada: +$${m.amount.toLocaleString()}${itemsSummary}`;
+          } else {
+            const methodLabel = m.paymentMethod === 'transfer' ? ' (Nequi)' : ' (Efectivo)';
+            return `💵 ${dateStr} - Abono recibido${methodLabel}: -$${m.amount.toLocaleString()}${
+              m.notes ? ` (${m.notes})` : ''
+            }`;
+          }
+        })
+        .join('\n');
+    } else {
+      movementsText = 'Sin compras recientes registradas.';
+    }
+
+    const message =
+      `🛒 *EL CUADERNO DIGITAL - ESTADO DE CUENTA*\n\n` +
+      `Hola *${customerName}*, le compartimos el detalle de su saldo en la tienda:\n\n` +
+      `💰 *SALDO TOTAL PENDIENTE: $${debtStr}*\n\n` +
+      `📝 *Últimos movimientos:*\n${movementsText}\n\n` +
+      `¡Muchas gracias por su confianza y preferencia! 🙏`;
+
+    let cleanPhone = (selectedCustomer.phone || '').replace(/[^0-9]/g, '');
+    if (cleanPhone.length === 10 && cleanPhone.startsWith('3')) {
+      cleanPhone = `57${cleanPhone}`;
+    }
+
+    const url = cleanPhone
+      ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
+      : `whatsapp://send?text=${encodeURIComponent(message)}`;
+
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        await Linking.openURL(
+          `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`
+        );
+      }
+    } catch (err: any) {
+      const msg = `No se pudo abrir WhatsApp: ${err.message}`;
+      if (Platform.OS === 'web') alert(msg);
+      else Alert.alert('WhatsApp', msg);
     }
   };
 
@@ -316,6 +386,16 @@ export function DebtorsScreen({
                     💵 Registrar Abono de Dinero
                   </Text>
                 </TouchableOpacity>
+
+                {/* Botón WhatsApp: Enviar Estado de Cuenta */}
+                <TouchableOpacity
+                  style={styles.shareWhatsAppBtn}
+                  onPress={handleShareWhatsApp}
+                >
+                  <Text style={styles.shareWhatsAppBtnText}>
+                    📲 Enviar Cuenta por WhatsApp
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               {/* Historial Detallado de Renglones (El Cuaderno) */}
@@ -364,7 +444,9 @@ export function DebtorsScreen({
                                 ? `📝 Compra Fiada ${
                                     item.saleNumber ? `#${item.saleNumber}` : ''
                                   }`
-                                : '💵 Abono Recibido'}
+                                : item.paymentMethod === 'transfer'
+                                ? '📲 Abono por Nequi / Transf.'
+                                : '💵 Abono en Efectivo (Caja)'}
                             </Text>
                             <Text style={styles.ledgerDate}>
                               {new Date(item.date).toLocaleDateString()} •{' '}
@@ -465,6 +547,42 @@ export function DebtorsScreen({
                   </Text>
                 </TouchableOpacity>
               ))}
+            </View>
+
+            <Text style={styles.inputLabel}>¿Cómo pagó el vecino? *</Text>
+            <View style={styles.methodSelectorRow}>
+              <TouchableOpacity
+                style={[
+                  styles.methodBtn,
+                  paymentMethod === 'cash' && styles.methodBtnActiveCash,
+                ]}
+                onPress={() => setPaymentMethod('cash')}
+              >
+                <Text
+                  style={[
+                    styles.methodBtnText,
+                    paymentMethod === 'cash' && styles.methodBtnTextActiveCash,
+                  ]}
+                >
+                  💵 Efectivo en Caja
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.methodBtn,
+                  paymentMethod === 'transfer' && styles.methodBtnActiveTransfer,
+                ]}
+                onPress={() => setPaymentMethod('transfer')}
+              >
+                <Text
+                  style={[
+                    styles.methodBtnText,
+                    paymentMethod === 'transfer' && styles.methodBtnTextActiveTransfer,
+                  ]}
+                >
+                  📲 Nequi / Transf.
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <Text style={styles.inputLabel}>Nota o referencia (opcional):</Text>
@@ -843,6 +961,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  shareWhatsAppBtn: {
+    backgroundColor: '#25D366',
+    width: '100%',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 8,
+    elevation: 2,
+  },
+  shareWhatsAppBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
   ledgerSection: {
     marginBottom: 20,
   },
@@ -1015,6 +1147,42 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: 'bold',
     color: '#334155',
+  },
+  methodSelectorRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  methodBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+  },
+  methodBtnActiveCash: {
+    borderColor: '#16A34A',
+    backgroundColor: '#DCFCE7',
+  },
+  methodBtnActiveTransfer: {
+    borderColor: '#4F46E5',
+    backgroundColor: '#EEF2FF',
+  },
+  methodBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  methodBtnTextActiveCash: {
+    color: '#166534',
+    fontWeight: 'bold',
+  },
+  methodBtnTextActiveTransfer: {
+    color: '#3730A3',
+    fontWeight: 'bold',
   },
   textInput: {
     borderWidth: 1,

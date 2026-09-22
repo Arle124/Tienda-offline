@@ -14,9 +14,14 @@ import { customerRepository } from './customer.repository';
 export interface TodaySalesSummary {
   totalSalesCount: number;
   totalCashSales: number;
+  totalTransferSales: number;
   totalDebtSales: number;
+  totalCashPaymentsReceived: number;
+  totalTransferPaymentsReceived: number;
   totalPaymentsReceived: number;
   totalRevenueToday: number;
+  totalPhysicalCashInDrawer: number;
+  totalDigitalInNequi: number;
   productsSold: Array<{
     productId?: string;
     productName: string;
@@ -30,6 +35,7 @@ export interface CreateSaleParams {
   paymentType: PaymentType;
   totalAmount: number;
   cashAmount: number;
+  transferAmount?: number;
   debtAmount: number;
   notes?: string;
   createdBy?: UserRole;
@@ -75,6 +81,7 @@ export class SaleRepository {
         payment_type: params.paymentType,
         total_amount: Number(params.totalAmount),
         cash_amount: Number(params.cashAmount),
+        transfer_amount: Number(params.transferAmount || 0),
         debt_amount: Number(params.debtAmount),
         notes: params.notes?.trim() || undefined,
         created_at: now,
@@ -193,16 +200,30 @@ export class SaleRepository {
     );
 
     let totalCashSales = 0;
+    let totalTransferSales = 0;
     let totalDebtSales = 0;
     for (const s of allSales) {
       totalCashSales += s.cash_amount || 0;
+      totalTransferSales +=
+        s.transfer_amount || (s.payment_type === 'transfer' ? s.total_amount : 0);
       totalDebtSales += s.debt_amount || 0;
     }
 
-    let totalPaymentsReceived = 0;
+    let totalCashPaymentsReceived = 0;
+    let totalTransferPaymentsReceived = 0;
     for (const p of allPayments) {
-      totalPaymentsReceived += p.amount_paid || 0;
+      if (p.payment_method === 'transfer') {
+        totalTransferPaymentsReceived += p.amount_paid || 0;
+      } else {
+        totalCashPaymentsReceived += p.amount_paid || 0;
+      }
     }
+    const totalPaymentsReceived =
+      totalCashPaymentsReceived + totalTransferPaymentsReceived;
+
+    const totalPhysicalCashInDrawer = totalCashSales + totalCashPaymentsReceived;
+    const totalDigitalInNequi = totalTransferSales + totalTransferPaymentsReceived;
+    const totalRevenueToday = totalPhysicalCashInDrawer + totalDigitalInNequi;
 
     const productMap = new Map<
       string,
@@ -232,9 +253,14 @@ export class SaleRepository {
     return {
       totalSalesCount: allSales.length,
       totalCashSales,
+      totalTransferSales,
       totalDebtSales,
+      totalCashPaymentsReceived,
+      totalTransferPaymentsReceived,
       totalPaymentsReceived,
-      totalRevenueToday: totalCashSales + totalPaymentsReceived,
+      totalRevenueToday,
+      totalPhysicalCashInDrawer,
+      totalDigitalInNequi,
       productsSold,
     };
   }

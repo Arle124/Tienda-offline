@@ -9,6 +9,7 @@ export * from './repositories/product.repository';
 export * from './repositories/customer.repository';
 export * from './repositories/sale.repository';
 export * from './repositories/debt.repository';
+export * from './repositories/supplier.repository';
 export * from './repositories/settings.repository';
 
 /**
