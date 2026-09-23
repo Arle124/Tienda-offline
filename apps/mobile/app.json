@@ -5,13 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#EA580C"
-    },
     "ios": {
       "supportsTablet": true
     },
@@ -20,7 +14,11 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#EA580C"
       },
-      "package": "com.tienda.offline"
+      "package": "com.tienda.offline",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       [
@@ -31,6 +29,11 @@
       ],
       "expo-sqlite",
       "expo-sharing"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "cea9794e-b484-472f-9154-b8cbbdcef8ad"
+      }
+    }
   }
 }
