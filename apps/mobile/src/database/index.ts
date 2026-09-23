@@ -40,7 +40,7 @@ export async function initDatabase(): Promise<void> {
     }
   }
 
-  // Precarga de clientes habituales para fiados si está vacío
+  // Precarga de clientes habituales para créditos si está vacío
   const customers = await customerRepository.getAll();
   if (customers.length === 0) {
     await customerRepository.save({

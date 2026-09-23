@@ -134,7 +134,7 @@ export class SaleRepository {
           initial_amount: Number(params.debtAmount),
           current_balance: Number(params.debtAmount),
           status: 'pending',
-          notes: `Fiado generado en venta #${nextSaleNumber}`,
+          notes: `Crédito generado en venta #${nextSaleNumber}`,
           created_at: now,
           updated_at: now,
           is_deleted: false,

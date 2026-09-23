@@ -1,5 +1,5 @@
 /**
- * Utilidades de hash para protección con PIN de la Dueña.
+ * Utilidades de hash para protección con PIN de Administrador.
  * Implementación SHA-256 pura en TypeScript, sin librerías externas nativas,
  * para compatibilidad 100% idéntica en Web, Android e iOS offline.
  */

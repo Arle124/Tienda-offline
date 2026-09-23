@@ -37,7 +37,7 @@ export default function App() {
   const [customers, setCustomers] = useState<LocalCustomer[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
 
-  // Modal de PIN para la Dueña desde la barra superior
+  // Modal de PIN para Administración desde la barra superior
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [enteredPin, setEnteredPin] = useState('');
   const [pinError, setPinError] = useState('');
@@ -140,15 +140,15 @@ export default function App() {
                 style={styles.tenderaBadge}
                 onPress={() => setPinModalVisible(true)}
               >
-                <Text style={styles.badgeText}>👤 Tendera</Text>
-                <Text style={styles.badgeSubtext}>PIN Dueña</Text>
+                <Text style={styles.badgeText}>👤 Mostrador</Text>
+                <Text style={styles.badgeSubtext}>PIN Admin</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 style={styles.duenaBadge}
                 onPress={() => setRole('tendera')}
               >
-                <Text style={styles.badgeText}>👑 Modo Dueña</Text>
+                <Text style={styles.badgeText}>💼 Administración</Text>
                 <Text style={styles.badgeSubtext}>Salir</Text>
               </TouchableOpacity>
             )}
@@ -238,7 +238,7 @@ export default function App() {
               activeTab === 'debtors' && styles.tabLabelActive,
             ]}
           >
-            Fiados
+            Créditos
           </Text>
         </TouchableOpacity>
 
@@ -280,25 +280,25 @@ export default function App() {
             }
           }}
         >
-          <Text style={styles.tabIcon}>👑</Text>
+          <Text style={styles.tabIcon}>💼</Text>
           <Text
             style={[
               styles.tabLabel,
               activeTab === 'owner' && styles.tabLabelActive,
             ]}
           >
-            Cierre
+            Admin
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Modal de PIN para la Dueña */}
+      {/* Modal de PIN para Administración */}
       <Modal visible={pinModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Acceso Modo Dueña (PIN)</Text>
+            <Text style={styles.modalTitle}>Acceso Administración (PIN)</Text>
             <Text style={styles.modalSubtitle}>
-              Ingresa el PIN de 4 dígitos para acceder a finanzas y cierre de caja.
+              Ingresa el PIN de 4 dígitos para acceder a finanzas, cierre y reportes.
             </Text>
 
             <TextInput

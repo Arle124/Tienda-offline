@@ -95,7 +95,7 @@ export function buildSalesWorksheet(
       'Cliente / Vecino',
       'Total Venta ($)',
       'Efectivo ($)',
-      'Fiado ($)',
+      'Crédito ($)',
       'Artículos Vendidos',
       'Notas',
     ],
@@ -130,7 +130,7 @@ export function buildSalesWorksheet(
         ? 'Efectivo Contado'
         : s.payment_type === 'transfer'
         ? 'Nequi / Transferencia'
-        : 'Fiado Cuaderno',
+        : 'Crédito Libreta',
       custName,
       s.total_amount || 0,
       s.cash_amount || 0,
@@ -169,12 +169,12 @@ export function buildSalesWorksheet(
     { wch: 26 }, // Cliente
     { wch: 16 }, // Total Venta
     { wch: 16 }, // Efectivo
-    { wch: 16 }, // Fiado
+    { wch: 16 }, // Crédito
     { wch: 45 }, // Artículos
     { wch: 25 }, // Notas
   ];
 
-  // Aplicar formato de moneda a las columnas F (Total), G (Efectivo), H (Fiado)
+  // Aplicar formato de moneda a las columnas F (Total), G (Efectivo), H (Crédito)
   const moneyCols = ['F', 'G', 'H'];
   for (let r = headerRowIndex + 1; r <= totalRowIndex; r++) {
     for (const col of moneyCols) {
@@ -189,7 +189,7 @@ export function buildSalesWorksheet(
 }
 
 /**
- * Genera la hoja de cálculo de la Libreta de Fiados (Cartera)
+ * Genera la hoja de cálculo de la Libreta de Créditos (Cartera)
  */
 export function buildDebtorsWorksheet(customers: LocalCustomer[]): XLSX.WorkSheet {
   let totalDebt = 0;
@@ -204,11 +204,11 @@ export function buildDebtorsWorksheet(customers: LocalCustomer[]): XLSX.WorkShee
   );
 
   const rows: any[][] = [
-    ['📒 EL CUADERNO DIGITAL - LIBRETA DE FIADOS (CARTERA)'],
+    ['📒 EL CUADERNO DIGITAL - LIBRETA DE CRÉDITOS (CARTERA)'],
     [`Generado el: ${dateStr} a las ${timeStr}`, '', '', '', '', '', ''],
     [],
     [
-      'Nombre del Vecino',
+      'Nombre del Cliente',
       'Apodo / Referencia',
       'Teléfono',
       'Saldo Pendiente ($)',
@@ -432,9 +432,9 @@ export function buildCashSummaryWorksheet(params: {
       'Ingresos en billetes/monedas en mostrador',
     ],
     [
-      '📥 Abonos de Fiados en Efectivo',
+      '📥 Abonos a Crédito en Efectivo',
       todayCashPaymentsReceived,
-      'Vecinos que abonaron en efectivo al cajón',
+      'Clientes que abonaron en efectivo al cajón',
     ],
     [
       '💸 Salidas de Efectivo (Proveedores/Gastos)',
@@ -455,9 +455,9 @@ export function buildCashSummaryWorksheet(params: {
       'Entró directo a la cuenta Nequi/Bancolombia',
     ],
     [
-      '📥 Abonos de Fiados por Nequi / Transf.',
+      '📥 Abonos a Crédito por Nequi / Transf.',
       todayTransferPaymentsReceived,
-      'Vecinos que transfirieron a tu número',
+      'Clientes que transfirieron a tu número',
     ],
     [
       '📱 TOTAL DINERO EN NEQUI / BANCOS HOY',
@@ -473,7 +473,7 @@ export function buildCashSummaryWorksheet(params: {
       'Efectivo Físico + Dinero Digital Nequi',
     ],
     [
-      '📝 Ventas Fiadas Hoy (En la Calle)',
+      '📝 Ventas a Crédito Hoy (Por Cobrar)',
       todayDebtSales,
       'Mercancía entregada a crédito el día de hoy',
     ],
@@ -528,14 +528,14 @@ export async function exportSalesToXlsx(
 }
 
 /**
- * Exporta el reporte de Libreta de Fiados en formato Excel (.xlsx)
+ * Exporta el reporte de Libreta de Créditos en formato Excel (.xlsx)
  */
 export async function exportDebtorsToXlsx(customers: LocalCustomer[]): Promise<void> {
   const wb = XLSX.utils.book_new();
   const ws = buildDebtorsWorksheet(customers);
-  XLSX.utils.book_append_sheet(wb, ws, 'Libreta de Fiados');
+  XLSX.utils.book_append_sheet(wb, ws, 'Libreta de Créditos');
   const todayStr = new Date().toISOString().slice(0, 10);
-  await shareOrDownloadXlsx(`Libreta_Fiados_${todayStr}.xlsx`, wb);
+  await shareOrDownloadXlsx(`Libreta_Creditos_${todayStr}.xlsx`, wb);
 }
 
 /**
@@ -581,9 +581,9 @@ export async function exportCompleteStoreWorkbookToXlsx(params: {
   });
   XLSX.utils.book_append_sheet(wb, wsCash, 'Cierre de Caja');
 
-  // Pestaña 2: Libreta de Fiados
+  // Pestaña 2: Libreta de Créditos
   const wsDebtors = buildDebtorsWorksheet(params.customers);
-  XLSX.utils.book_append_sheet(wb, wsDebtors, 'Libreta de Fiados');
+  XLSX.utils.book_append_sheet(wb, wsDebtors, 'Libreta de Créditos');
 
   // Pestaña 3: Detalle de Ventas
   const wsSales = buildSalesWorksheet(params.sales, params.items, params.customers);

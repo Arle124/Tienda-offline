@@ -404,7 +404,7 @@ export function InventoryScreen({
                 </View>
 
                 <View style={[styles.metricCard, { backgroundColor: '#FEF9C3' }]}>
-                  <Text style={styles.metricCardLabel}>Fiado Hoy a Vecinos</Text>
+                  <Text style={styles.metricCardLabel}>Créditos Hoy a Clientes</Text>
                   <Text style={[styles.metricCardValue, { color: '#854D0E' }]}>
                     ${todaySummary.totalDebtSales.toLocaleString()}
                   </Text>

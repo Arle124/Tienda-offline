@@ -32,6 +32,19 @@
 
 ## Sesiones Recientes
 
+### 23 de Septiembre de 2026 - Terminología Comercial Profesional e Inclusiva
+* **Sustitución de "Fiado" por "Crédito":**
+  * Pestaña y vistas actualizadas a `Créditos` y `Libreta de Créditos`.
+  * Etiquetas de métricas (`Total Créditos por Cobrar`, `Crédito Hoy`), alertas y desgloses de compras y abonos renovados para transmitir formalidad financiera.
+  * Reportes Excel (.xlsx) y mensajes generados de WhatsApp adaptados con terminología de venta a crédito.
+* **Neutralidad de Género y Roles Profesionales:**
+  * Eliminación de términos exclusivos de género como "Dueña" y "Tendera".
+  * Nueva nomenclatura operativa: `👤 Mostrador` (rol operativo) y `💼 Administración` (rol de gerencia y cierre).
+  * Seguridad renovada: `PIN de Administrador`.
+* **Análisis de Estrategia de Nube y Sincronización:**
+  * Evaluación de respaldo estilo WhatsApp mediante **Google Drive AppData Folder** (Costo $0/mes, privacidad total).
+  * Definición de arquitectura de bajo costo en AWS (Lightsail $3.50-$5/mes o Serverless HTTP API + Lambda + Turso $0/mes) para sincronización multi-caja.
+
 ### 22 de Septiembre de 2026 - Módulos de Mostrador, Cuaderno de Fiados e Inventario
 * **Navegación por Pestañas Táctiles:** Reemplazo del scroll monolítico de `App.tsx` por 4 pantallas especializadas con barra inferior accesible y badges en tiempo real.
 * **Cuaderno Digital de Fiados:**

@@ -276,7 +276,7 @@ export function PosScreen({
   const handleDebtSale = async () => {
     if (cart.length === 0) return;
     if (!selectedCustomerId) {
-      const msg = 'Selecciona el cliente a quien le vas a fiar.';
+      const msg = 'Selecciona el cliente a quien le vas a otorgar el crédito.';
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Atención', msg);
       return;
@@ -301,14 +301,14 @@ export function PosScreen({
         })),
       });
 
-      const message = `📝 Fiado registrado para ${customer?.name || 'cliente'}. Monto: $${totalAmount.toLocaleString()}`;
+      const message = `📝 Crédito registrado para ${customer?.name || 'cliente'}. Monto: $${totalAmount.toLocaleString()}`;
       clearCart();
       await onSaleCompleted();
 
       if (Platform.OS === 'web') alert(message);
-      else Alert.alert('Fiado Guardado en Libreta', message);
+      else Alert.alert('Crédito Guardado en Libreta', message);
     } catch (err: any) {
-      const msg = `Error al fiar: ${err.message}`;
+      const msg = `Error al registrar crédito: ${err.message}`;
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Error', msg);
     }
@@ -497,15 +497,15 @@ export function PosScreen({
             </TouchableOpacity>
           </View>
 
-          {/* Sección de Fiar al Cuaderno */}
+          {/* Sección de Asignar a Crédito */}
           <View style={styles.fiarBox}>
             <View style={styles.fiarBoxHeader}>
-              <Text style={styles.fiarBoxTitle}>O Fiar a Cliente de Confianza:</Text>
+              <Text style={styles.fiarBoxTitle}>O Asignar a Crédito de Cliente:</Text>
               <TouchableOpacity
                 onPress={() => setQuickCustomerModal(true)}
                 style={styles.newCustBtn}
               >
-                <Text style={styles.newCustBtnText}>+ Nuevo Vecino</Text>
+                <Text style={styles.newCustBtnText}>+ Nuevo Cliente</Text>
               </TouchableOpacity>
             </View>
 
@@ -541,7 +541,7 @@ export function PosScreen({
                         isSelected && styles.customerPillDebtActive,
                       ]}
                     >
-                      Debe: ${c.current_debt.toLocaleString()}
+                      Saldo: ${c.current_debt.toLocaleString()}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -551,7 +551,7 @@ export function PosScreen({
             {selectedCustomerId && (
               <TouchableOpacity style={styles.fiarConfirmBtn} onPress={handleDebtSale}>
                 <Text style={styles.fiarConfirmBtnText}>
-                  📒 Anotar en Cuaderno de Fiados (${totalAmount.toLocaleString()})
+                  📒 Registrar en Libreta de Créditos (${totalAmount.toLocaleString()})
                 </Text>
               </TouchableOpacity>
             )}
@@ -608,9 +608,9 @@ export function PosScreen({
       <Modal visible={quickCustomerModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>👤 Registrar Nuevo Vecino</Text>
+            <Text style={styles.modalTitle}>👤 Registrar Nuevo Cliente</Text>
             <Text style={styles.modalDesc}>
-              Añádelo en 2 segundos para poder fiarle de inmediato.
+              Añádelo en 2 segundos para asignarle crédito de inmediato.
             </Text>
 
             <Text style={styles.inputLabel}>Nombre y Apellido *</Text>

@@ -107,7 +107,7 @@ export function OwnerScreen({
       setChangePinModal(false);
       setCurrentPin('');
       setNewPin('');
-      const msg = '✅ PIN de Dueña actualizado con éxito.';
+      const msg = '✅ PIN de Administrador actualizado con éxito.';
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Listo', msg);
     } catch (err: any) {
@@ -134,7 +134,7 @@ export function OwnerScreen({
     try {
       await exportDebtorsToXlsx(customers);
     } catch (err: any) {
-      const msg = `Error al exportar fiados a Excel: ${err.message}`;
+      const msg = `Error al exportar créditos a Excel: ${err.message}`;
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Error', msg);
     } finally {
@@ -199,7 +199,7 @@ export function OwnerScreen({
       <View style={styles.lockedContainer}>
         <View style={styles.lockCard}>
           <Text style={styles.lockIcon}>🔒</Text>
-          <Text style={styles.lockTitle}>Modo Dueña Protegido</Text>
+          <Text style={styles.lockTitle}>Acceso Administrativo Protegido</Text>
           <Text style={styles.lockSubtitle}>
             Ingresa tu PIN de 4 dígitos para acceder al cierre de caja, finanzas y arqueo.
           </Text>
@@ -218,7 +218,7 @@ export function OwnerScreen({
           {Boolean(pinError) && <Text style={styles.errorText}>{pinError}</Text>}
 
           <TouchableOpacity style={styles.unlockBtn} onPress={handleUnlock}>
-            <Text style={styles.unlockBtnText}>Entrar como Dueña</Text>
+            <Text style={styles.unlockBtnText}>Ingresar como Administrador</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -227,10 +227,10 @@ export function OwnerScreen({
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Cabecera Modo Dueña */}
+      {/* Cabecera Administración */}
       <View style={styles.headerCard}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>👑 Panel Financiero de la Dueña</Text>
+          <Text style={styles.headerTitle}>💼 Panel de Administración y Cierre</Text>
           <Text style={styles.headerSubtitle}>
             Cierre de caja y salud económica del negocio
           </Text>
@@ -298,17 +298,17 @@ export function OwnerScreen({
           </View>
         </View>
 
-        {/* Fiados de Hoy vs Cartera Total */}
+        {/* Créditos de Hoy vs Cartera Total */}
         <View style={[styles.kpiRow, { marginTop: 10 }]}>
           <View style={[styles.kpiCardMini, { backgroundColor: '#FEF9C3' }]}>
-            <Text style={styles.kpiMiniLabel}>📝 Fiado Hoy</Text>
+            <Text style={styles.kpiMiniLabel}>📝 Crédito Hoy</Text>
             <Text style={[styles.kpiMiniValue, { color: '#854D0E' }]}>
               ${todaySummary?.totalDebtSales.toLocaleString() || '0'}
             </Text>
           </View>
 
           <View style={[styles.kpiCardMini, { backgroundColor: '#FEE2E2' }]}>
-            <Text style={styles.kpiMiniLabel}>📒 Total en la Calle</Text>
+            <Text style={styles.kpiMiniLabel}>📒 Total Cartera</Text>
             <Text style={[styles.kpiMiniValue, { color: '#991B1B' }]}>
               ${totalStreetDebt.toLocaleString()}
             </Text>
@@ -390,10 +390,10 @@ export function OwnerScreen({
           >
             <View style={{ flex: 1 }}>
               <Text style={[styles.reportBtnTitle, { color: '#6D28D9' }]}>
-                👑 Libro Maestro Completo (.xlsx)
+                💼 Libro Maestro Completo (.xlsx)
               </Text>
               <Text style={styles.reportBtnDesc}>
-                Las 4 hojas en un solo archivo: Cierre de Caja, Libreta de Fiados, Ventas e Inventario.
+                Las 4 hojas en un solo archivo: Cierre de Caja, Libreta de Créditos, Ventas e Inventario.
               </Text>
             </View>
             <Text style={styles.reportBtnIcon}>📗</Text>
@@ -410,13 +410,13 @@ export function OwnerScreen({
                 📈 Reporte de Ventas (.xlsx)
               </Text>
               <Text style={styles.reportBtnDesc}>
-                Todas las ventas, cobros de contado, créditos fiados y desglose de artículos.
+                Todas las ventas, cobros de contado, ventas a crédito y desglose de artículos.
               </Text>
             </View>
             <Text style={styles.reportBtnIcon}>📥</Text>
           </TouchableOpacity>
 
-          {/* Reporte de Cartera / Fiados */}
+          {/* Reporte de Cartera / Créditos */}
           <TouchableOpacity
             style={[styles.reportBtn, { borderColor: '#D97706', backgroundColor: '#FFFBEB' }]}
             onPress={handleExportDebtors}
@@ -424,10 +424,10 @@ export function OwnerScreen({
           >
             <View style={{ flex: 1 }}>
               <Text style={[styles.reportBtnTitle, { color: '#B45309' }]}>
-                📒 Libreta de Fiados (.xlsx)
+                📒 Libreta de Créditos (.xlsx)
               </Text>
               <Text style={styles.reportBtnDesc}>
-                Lista de todos los vecinos, teléfonos, deudas pendientes y estado de cuenta.
+                Lista de todos los clientes, teléfonos, saldos pendientes y estado de cuenta.
               </Text>
             </View>
             <Text style={styles.reportBtnIcon}>📥</Text>
@@ -497,7 +497,7 @@ export function OwnerScreen({
       <Modal visible={changePinModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>🔑 Cambiar PIN de Dueña</Text>
+            <Text style={styles.modalTitle}>🔑 Cambiar PIN de Administrador</Text>
 
             <Text style={styles.inputLabel}>PIN actual *</Text>
             <TextInput

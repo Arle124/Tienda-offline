@@ -104,7 +104,7 @@ export function DebtorsScreen({
       const ledger = await debtRepository.getCustomerLedger(customerId);
       setLedgerItems(ledger);
     } catch (err) {
-      console.error('Error cargando historial de fiados:', err);
+      console.error('Error cargando historial de créditos:', err);
     } finally {
       setLoadingLedger(false);
     }
@@ -126,7 +126,7 @@ export function DebtorsScreen({
       title: hasDebt ? '⚠️ Vecino con deuda pendiente' : '¿Eliminar vecino?',
       message: hasDebt
         ? `"${selectedCustomer.name}" todavía tiene un saldo pendiente de $${debtStr} en la libreta.\n\nSi lo eliminas, su deuda quedará archivada. ¿Seguro que deseas eliminarlo de todas formas?`
-        : `¿Estás seguro de que deseas eliminar a "${selectedCustomer.name}" de la libreta de fiados?`,
+        : `¿Estás seguro de que deseas eliminar a "${selectedCustomer.name}" de la libreta de créditos?`,
       confirmText: hasDebt ? 'Sí, archivar y eliminar' : 'Sí, eliminar',
       cancelText: 'Cancelar',
       showCancel: true,
@@ -138,8 +138,8 @@ export function DebtorsScreen({
           await onRefreshData();
           showAlert({
             type: 'success',
-            title: 'Vecino eliminado',
-            message: `"${customerName}" fue retirado de la libreta de fiados.`,
+            title: 'Cliente eliminado',
+            message: `"${customerName}" fue retirado de la libreta de créditos.`,
           });
         } catch (err: any) {
           showAlert({
@@ -221,7 +221,7 @@ export function DebtorsScreen({
               m.items && m.items.length > 0
                 ? `\n   ${m.items.map((i) => `• ${i.quantity}x ${i.productName}`).join('\n   ')}`
                 : '';
-            return `📅 ${dateStr} - Compra Fiada: +$${m.amount.toLocaleString()}${itemsSummary}`;
+            return `📅 ${dateStr} - Compra a Crédito: +$${m.amount.toLocaleString()}${itemsSummary}`;
           } else {
             const methodLabel = m.paymentMethod === 'transfer' ? ' (Nequi)' : ' (Efectivo)';
             return `💵 ${dateStr} - Abono recibido${methodLabel}: -$${m.amount.toLocaleString()}${
@@ -297,14 +297,14 @@ export function DebtorsScreen({
 
       showAlert({
         type: 'success',
-        title: 'Vecino registrado',
-        message: `"${newName.trim()}" fue agregado a la libreta de fiados.`,
+        title: 'Cliente registrado',
+        message: `"${newName.trim()}" fue agregado a la libreta de créditos.`,
       });
     } catch (err: any) {
       showAlert({
         type: 'danger',
         title: 'Error al registrar',
-        message: `No se pudo registrar el vecino: ${err.message}`,
+        message: `No se pudo registrar el cliente: ${err.message}`,
       });
     }
   };
@@ -336,14 +336,14 @@ export function DebtorsScreen({
       <View style={styles.summaryCard}>
         <View style={styles.summaryRow}>
           <View>
-            <Text style={styles.summaryLabel}>Total Fiados en la Calle</Text>
+            <Text style={styles.summaryLabel}>Total Créditos por Cobrar</Text>
             <Text style={styles.summaryValue}>
               ${totalDebtInStreet.toLocaleString()}
             </Text>
           </View>
           <View style={styles.debtorsCountBadge}>
             <Text style={styles.debtorsCountNumber}>{customersWithDebtCount}</Text>
-            <Text style={styles.debtorsCountLabel}>vecinos con saldo</Text>
+            <Text style={styles.debtorsCountLabel}>clientes con saldo</Text>
           </View>
         </View>
       </View>
@@ -514,7 +514,7 @@ export function DebtorsScreen({
                   Anotaciones en la Libreta
                 </Text>
                 <Text style={styles.ledgerSectionSubtitle}>
-                  Detalle de compras fiadas y abonos realizados
+                  Detalle de compras a crédito y abonos realizados
                 </Text>
 
                 {loadingLedger ? (
@@ -526,7 +526,7 @@ export function DebtorsScreen({
                 ) : ledgerItems.length === 0 ? (
                   <View style={styles.emptyLedger}>
                     <Text style={styles.emptyLedgerText}>
-                      No hay compras fiadas ni abonos registrados para este cliente.
+                      No hay compras a crédito ni abonos registrados para este cliente.
                     </Text>
                   </View>
                 ) : (
@@ -551,7 +551,7 @@ export function DebtorsScreen({
                               ]}
                             >
                               {isDebt
-                                ? `📝 Compra Fiada ${
+                                ? `📝 Compra a Crédito ${
                                     item.saleNumber ? `#${item.saleNumber}` : ''
                                   }`
                                 : item.paymentMethod === 'transfer'
@@ -582,7 +582,7 @@ export function DebtorsScreen({
                         {item.items && item.items.length > 0 && (
                           <View style={styles.itemsBreakdown}>
                             <Text style={styles.itemsBreakdownTitle}>
-                              Artículos fiados:
+                              Artículos a crédito:
                             </Text>
                             {item.items.map((art, idx) => (
                               <View key={idx} style={styles.itemLine}>
