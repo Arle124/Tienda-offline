@@ -11,7 +11,14 @@ export class SettingsRepository {
   async getSettings(): Promise<LocalStoreSettings> {
     const all = await this.driver.getAll<LocalStoreSettings>('store_settings');
     if (all.length > 0 && !all[0].is_deleted) {
-      return all[0];
+      const record = all[0];
+      return {
+        ...record,
+        currency_symbol: record.currency_symbol || '$',
+        use_decimals: Boolean(record.use_decimals),
+        store_phone: record.store_phone || '',
+        haptic_enabled: record.haptic_enabled !== false && (record.haptic_enabled as any) !== 0,
+      };
     }
 
     // Configuración inicial por defecto (PIN por defecto: '1234')
@@ -20,6 +27,10 @@ export class SettingsRepository {
       id: generateUUID(),
       store_name: 'Mi Tienda de Barrio',
       owner_pin_hash: hashPin('1234'),
+      currency_symbol: '$',
+      use_decimals: false,
+      store_phone: '',
+      haptic_enabled: true,
       created_at: now,
       updated_at: now,
       is_deleted: false,

@@ -26,6 +26,8 @@ import { DebtorsScreen } from './src/screens/debtors/DebtorsScreen';
 import { InventoryScreen } from './src/screens/inventory/InventoryScreen';
 import { OwnerScreen } from './src/screens/owner/OwnerScreen';
 import { ToastProvider } from './src/components/Toast';
+import { SettingsProvider } from './src/context/SettingsContext';
+import { SettingsModal } from './src/components/SettingsModal';
 
 type TabKey = 'pos' | 'debtors' | 'inventory' | 'owner';
 
@@ -42,6 +44,9 @@ export default function App() {
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [enteredPin, setEnteredPin] = useState('');
   const [pinError, setPinError] = useState('');
+
+  // Modal de Ajustes
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -124,38 +129,48 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <ToastProvider>
-        <SafeAreaView style={styles.container}>
-          <StatusBar style="light" />
+      <SettingsProvider>
+        <ToastProvider>
+          <SafeAreaView style={styles.container}>
+            <StatusBar style="light" />
 
-      {/* Cabecera Superior */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.title}>Mi Cuaderno Digital</Text>
-            <Text style={styles.subtitle}>Modo Offline Activo • SQLite Local</Text>
-          </View>
+            {/* Cabecera Superior */}
+            <View style={styles.header}>
+              <View style={styles.headerTop}>
+                <View>
+                  <Text style={styles.title}>Mi Cuaderno Digital</Text>
+                  <Text style={styles.subtitle}>Modo Offline Activo • SQLite Local</Text>
+                </View>
 
-          <View style={styles.headerRight}>
-            {role === 'tendera' ? (
-              <TouchableOpacity
-                style={styles.tenderaBadge}
-                onPress={() => setPinModalVisible(true)}
-              >
-                <Text style={styles.badgeText}>👤 Mostrador</Text>
-                <Text style={styles.badgeSubtext}>PIN Admin</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.duenaBadge}
-                onPress={() => setRole('tendera')}
-              >
-                <Text style={styles.badgeText}>💼 Administración</Text>
-                <Text style={styles.badgeSubtext}>Salir</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+                <View style={styles.headerRight}>
+                  {role === 'tendera' ? (
+                    <TouchableOpacity
+                      style={styles.tenderaBadge}
+                      onPress={() => setPinModalVisible(true)}
+                    >
+                      <Text style={styles.badgeText}>👤 Mostrador</Text>
+                      <Text style={styles.badgeSubtext}>PIN Admin</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.duenaBadge}
+                      onPress={() => setRole('tendera')}
+                    >
+                      <Text style={styles.badgeText}>💼 Administración</Text>
+                      <Text style={styles.badgeSubtext}>Salir</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity
+                    style={styles.settingsButton}
+                    onPress={() => setSettingsModalVisible(true)}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.settingsIcon}>⚙️</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
         {/* Barra de sincronización offline */}
         <View style={styles.syncRow}>
@@ -337,8 +352,20 @@ export default function App() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Ajustes */}
+      <SettingsModal
+        visible={settingsModalVisible}
+        onClose={() => {
+          setSettingsModalVisible(false);
+          loadData();
+        }}
+        currentRole={role}
+        onRoleChange={setRole}
+      />
         </SafeAreaView>
       </ToastProvider>
+    </SettingsProvider>
     </SafeAreaProvider>
   );
 }
@@ -381,7 +408,22 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   headerRight: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  settingsButton: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingsIcon: {
+    fontSize: 16,
   },
   tenderaBadge: {
     backgroundColor: '#1E293B',

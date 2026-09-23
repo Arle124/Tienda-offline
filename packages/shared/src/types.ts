@@ -14,6 +14,10 @@ export interface BaseEntity {
 export interface StoreSettings extends BaseEntity {
   store_name: string;
   owner_pin_hash: string;
+  currency_symbol?: string;
+  use_decimals?: boolean;
+  store_phone?: string;
+  haptic_enabled?: boolean;
 }
 
 export interface Customer extends BaseEntity {

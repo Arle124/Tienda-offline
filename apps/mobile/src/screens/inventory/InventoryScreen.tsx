@@ -19,6 +19,7 @@ import {
   TodaySalesSummary,
 } from '../../database';
 import { CustomAlert, AlertType } from '../../components/CustomAlert';
+import { useSettings } from '../../context/SettingsContext';
 
 interface InventoryScreenProps {
   products: LocalProduct[];
@@ -31,6 +32,7 @@ export function InventoryScreen({
   role,
   onRefreshData,
 }: InventoryScreenProps) {
+  const { formatMoney } = useSettings();
   const [activeSubTab, setActiveSubTab] = useState<'stock' | 'today_sales'>('stock');
   const [searchProduct, setSearchProduct] = useState('');
   const [todaySummary, setTodaySummary] = useState<TodaySalesSummary | null>(null);
@@ -332,8 +334,8 @@ export function InventoryScreen({
                     </View>
 
                     <Text style={styles.prodPrice}>
-                      ${prod.price.toLocaleString()}
-                      {prod.cost_price ? ` • Costo: $${prod.cost_price.toLocaleString()}` : ''}
+                      {formatMoney(prod.price)}
+                      {prod.cost_price ? ` • Costo: ${formatMoney(prod.cost_price)}` : ''}
                     </Text>
 
                     <Text style={[styles.prodStockLabel, isLow && styles.prodStockLowLabel]}>
@@ -395,18 +397,18 @@ export function InventoryScreen({
                 <View style={[styles.metricCard, { backgroundColor: '#DCFCE7' }]}>
                   <Text style={styles.metricCardLabel}>Dinero en Caja Hoy</Text>
                   <Text style={[styles.metricCardValue, { color: '#166534' }]}>
-                    ${todaySummary.totalRevenueToday.toLocaleString()}
+                    {formatMoney(todaySummary.totalRevenueToday)}
                   </Text>
                   <Text style={styles.metricCardSub}>
-                    Ventas: ${todaySummary.totalCashSales.toLocaleString()} • Abonos: $
-                    {todaySummary.totalPaymentsReceived.toLocaleString()}
+                    Ventas: {formatMoney(todaySummary.totalCashSales)} • Abonos:{' '}
+                    {formatMoney(todaySummary.totalPaymentsReceived)}
                   </Text>
                 </View>
 
                 <View style={[styles.metricCard, { backgroundColor: '#FEF9C3' }]}>
                   <Text style={styles.metricCardLabel}>Créditos Hoy a Clientes</Text>
                   <Text style={[styles.metricCardValue, { color: '#854D0E' }]}>
-                    ${todaySummary.totalDebtSales.toLocaleString()}
+                    {formatMoney(todaySummary.totalDebtSales)}
                   </Text>
                   <Text style={styles.metricCardSub}>
                     {todaySummary.totalSalesCount} transacciones hoy
@@ -439,7 +441,7 @@ export function InventoryScreen({
                         </Text>
                       </View>
                       <Text style={styles.soldItemTotal}>
-                        ${item.totalSubtotal.toLocaleString()}
+                        {formatMoney(item.totalSubtotal)}
                       </Text>
                     </View>
                   ))

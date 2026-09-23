@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import { SQLITE_SCHEMA, StoreName } from './schema';
 import type { IDatabaseDriver } from './adapter';
 
-const BOOLEAN_FIELDS = new Set(['is_deleted', 'is_favorite', 'is_paid']);
+const BOOLEAN_FIELDS = new Set(['is_deleted', 'is_favorite', 'is_paid', 'use_decimals', 'haptic_enabled']);
 
 function toSqliteRow(item: Record<string, any>): Record<string, any> {
   const row: Record<string, any> = {};
@@ -45,6 +45,34 @@ export class SQLiteDriver implements IDatabaseDriver {
       try {
         await this.db.execAsync(
           "ALTER TABLE debt_payments ADD COLUMN payment_method TEXT NOT NULL DEFAULT 'cash';"
+        );
+      } catch {
+        // Columna ya existe
+      }
+      try {
+        await this.db.execAsync(
+          "ALTER TABLE store_settings ADD COLUMN currency_symbol TEXT DEFAULT '$';"
+        );
+      } catch {
+        // Columna ya existe
+      }
+      try {
+        await this.db.execAsync(
+          "ALTER TABLE store_settings ADD COLUMN use_decimals INTEGER DEFAULT 0;"
+        );
+      } catch {
+        // Columna ya existe
+      }
+      try {
+        await this.db.execAsync(
+          "ALTER TABLE store_settings ADD COLUMN store_phone TEXT DEFAULT '';"
+        );
+      } catch {
+        // Columna ya existe
+      }
+      try {
+        await this.db.execAsync(
+          "ALTER TABLE store_settings ADD COLUMN haptic_enabled INTEGER DEFAULT 1;"
         );
       } catch {
         // Columna ya existe

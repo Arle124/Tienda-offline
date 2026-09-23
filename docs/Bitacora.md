@@ -32,6 +32,25 @@
 
 ## Sesiones Recientes
 
+### 23 de Septiembre de 2026 - Botón de Ajustes (⚙️), Roles y Moneda Internacional Dinámica
+* **Botón Universal de Ajustes en Barra Superior ([App.tsx](file:///home/asher/tienda-offline/apps/mobile/App.tsx)):**
+  * Icono de tuerca `⚙️` en la cabecera junto al rol operativo, accesible desde cualquier vista de la aplicación.
+* **Componente y Modal de Ajustes ([SettingsModal.tsx](file:///home/asher/tienda-offline/apps/mobile/src/components/SettingsModal.tsx)):**
+  * **División por Roles con Candado de Seguridad:**
+    * *Modo Mostrador:* Acceso libre a preferencias de dispositivo (vibración háptica, modo offline autónomo de 0ms) e información del sistema. Bloqueo con PIN de 4 dígitos para ingresar a la configuración del negocio.
+    * *Modo Administración:* Acceso directo o desbloqueado a datos de la tienda, cambio de PIN y formato regional.
+  * **Soporte de Moneda Internacional Multi-País:**
+    * Chips rápidos de divisas (`$`, `S/`, `Bs`, `Q`, `€`, `₡`) y campo personalizado para cualquier prefijo.
+    * Interruptor para manejo de decimales (centavos) adaptado a cada país (ej: Colombia/Chile sin decimales `$25.000` vs Perú/México con centavos `S/ 25.50`).
+    * Vista previa en vivo del formato monetario en tiempo real.
+  * **Identidad Comercial:**
+    * Configuración de nombre de la tienda y teléfono de contacto para estados de cuenta de WhatsApp y reportes contables.
+* **Contexto Global de Configuración ([SettingsContext.tsx](file:///home/asher/tienda-offline/apps/mobile/src/context/SettingsContext.tsx)):**
+  * Proveedor reactivo `SettingsProvider` y función global `formatMoney()`.
+  * Integración en todas las pantallas ([PosScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/pos/PosScreen.tsx), [DebtorsScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/debtors/DebtorsScreen.tsx), [InventoryScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/inventory/InventoryScreen.tsx), [OwnerScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/owner/OwnerScreen.tsx)) y toasts con respuesta háptica condicional.
+* **Migraciones de Base de Datos SQLite:**
+  * Inclusión de columnas `currency_symbol`, `use_decimals`, `store_phone` y `haptic_enabled` en tabla `store_settings` con migraciones seguras y tipado estricto en `@tienda/shared`.
+
 ### 23 de Septiembre de 2026 - Erradicación de Alertas del Sistema y Toasts Flotantes Profesionales
 * **Componente Global de Notificaciones (`Toast.tsx`):**
   * Creación de `ToastProvider` y hook `useToast()` accesible desde cualquier pantalla.

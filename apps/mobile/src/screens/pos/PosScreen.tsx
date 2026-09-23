@@ -18,6 +18,7 @@ import {
   supplierRepository,
 } from '../../database';
 import { useToast } from '../../components/Toast';
+import { useSettings } from '../../context/SettingsContext';
 
 interface PosScreenProps {
   products: LocalProduct[];
@@ -35,6 +36,7 @@ export function PosScreen({
   onGoToDebtors,
 }: PosScreenProps) {
   const { showToast } = useToast();
+  const { formatMoney } = useSettings();
 
   // Carrito de compras
   const [cart, setCart] = useState<
@@ -120,7 +122,7 @@ export function PosScreen({
       return;
     }
 
-    const name = freeItemName.trim() || `Venta Libre $${price.toLocaleString()}`;
+    const name = freeItemName.trim() || `Venta Libre ${formatMoney(price)}`;
     const virtualProduct: LocalProduct = {
       id: `custom_${Date.now()}`,
       name,
@@ -179,7 +181,7 @@ export function PosScreen({
       showToast({
         type: 'success',
         title: 'Salida Registrada',
-        message: `Monto: $${amount.toLocaleString()} • ${outflowConcept.trim()}`,
+        message: `Monto: ${formatMoney(amount)} • ${outflowConcept.trim()}`,
       });
     } catch (err: any) {
       showToast({
@@ -249,7 +251,7 @@ export function PosScreen({
       });
 
       const change = receivedCash !== null && receivedCash >= totalAmount ? receivedCash - totalAmount : 0;
-      const changeText = change > 0 ? ` • Cambio: $${change.toLocaleString()}` : '';
+      const changeText = change > 0 ? ` • Cambio: ${formatMoney(change)}` : '';
 
       clearCart();
       await onSaleCompleted();
@@ -257,7 +259,7 @@ export function PosScreen({
       showToast({
         type: 'success',
         title: 'Venta en Efectivo Cobrada',
-        message: `Total: $${totalAmount.toLocaleString()}${changeText}`,
+        message: `Total: ${formatMoney(totalAmount)}${changeText}`,
       });
     } catch (err: any) {
       showToast({
@@ -295,7 +297,7 @@ export function PosScreen({
       showToast({
         type: 'success',
         title: 'Venta Digital Registrada',
-        message: `$${totalAmount.toLocaleString()} vía Nequi / Transferencia.`,
+        message: `${formatMoney(totalAmount)} vía Nequi / Transferencia.`,
       });
     } catch (err: any) {
       showToast({
@@ -342,7 +344,7 @@ export function PosScreen({
       showToast({
         type: 'success',
         title: 'Crédito Guardado en Libreta',
-        message: `${customer?.name || 'Cliente'} • $${totalAmount.toLocaleString()}`,
+        message: `${customer?.name || 'Cliente'} • ${formatMoney(totalAmount)}`,
       });
     } catch (err: any) {
       showToast({
@@ -408,7 +410,7 @@ export function PosScreen({
               <Text style={styles.productName} numberOfLines={2}>
                 {prod.name}
               </Text>
-              <Text style={styles.productPrice}>${prod.price.toLocaleString()}</Text>
+              <Text style={styles.productPrice}>{formatMoney(prod.price)}</Text>
               <View style={styles.stockRow}>
                 <Text
                   style={[
@@ -451,7 +453,7 @@ export function PosScreen({
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cartItemName}>{item.product.name}</Text>
                   <Text style={styles.cartItemPrice}>
-                    ${item.product.price.toLocaleString()} c/u
+                    {formatMoney(item.product.price)} c/u
                   </Text>
                 </View>
 
@@ -472,7 +474,7 @@ export function PosScreen({
                 </View>
 
                 <Text style={styles.cartItemSubtotal}>
-                  ${(item.product.price * item.quantity).toLocaleString()}
+                  {formatMoney(item.product.price * item.quantity)}
                 </Text>
               </View>
             ))}
@@ -481,7 +483,7 @@ export function PosScreen({
           {/* Gran Total */}
           <View style={styles.totalDisplay}>
             <Text style={styles.totalLabel}>TOTAL A COBRAR:</Text>
-            <Text style={styles.totalNumber}>${totalAmount.toLocaleString()}</Text>
+            <Text style={styles.totalNumber}>{formatMoney(totalAmount)}</Text>
           </View>
 
           {/* Atajos de Efectivo y Vuelto */}
@@ -506,7 +508,7 @@ export function PosScreen({
                       receivedCash === val && styles.cashChipTextActive,
                     ]}
                   >
-                    {val === totalAmount ? 'Exacto' : `$${val.toLocaleString()}`}
+                    {val === totalAmount ? 'Exacto' : formatMoney(val)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -515,7 +517,7 @@ export function PosScreen({
           {receivedCash !== null && receivedCash > totalAmount && (
             <View style={styles.changeDisplay}>
               <Text style={styles.changeLabel}>CAMBIO / VUELTO:</Text>
-              <Text style={styles.changeNumber}>${changeAmount.toLocaleString()}</Text>
+              <Text style={styles.changeNumber}>{formatMoney(changeAmount)}</Text>
             </View>
           )}
 
@@ -523,14 +525,14 @@ export function PosScreen({
           <View style={styles.checkoutActionsRow}>
             <TouchableOpacity style={styles.cashSaleButton} onPress={handleCashSale}>
               <Text style={styles.cashSaleButtonText}>
-                💵 Efectivo (${totalAmount.toLocaleString()})
+                💵 Efectivo ({formatMoney(totalAmount)})
               </Text>
               <Text style={styles.checkoutSubtext}>Entra al cajón físico</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.nequiSaleButton} onPress={handleTransferSale}>
               <Text style={styles.nequiSaleButtonText}>
-                📲 Nequi / Transf. (${totalAmount.toLocaleString()})
+                📲 Nequi / Transf. ({formatMoney(totalAmount)})
               </Text>
               <Text style={styles.checkoutSubtextNequi}>Entra a tu cuenta</Text>
             </TouchableOpacity>
@@ -580,7 +582,7 @@ export function PosScreen({
                         isSelected && styles.customerPillDebtActive,
                       ]}
                     >
-                      Saldo: ${c.current_debt.toLocaleString()}
+                      Saldo: {formatMoney(c.current_debt)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -590,7 +592,7 @@ export function PosScreen({
             {selectedCustomerId && (
               <TouchableOpacity style={styles.fiarConfirmBtn} onPress={handleDebtSale}>
                 <Text style={styles.fiarConfirmBtnText}>
-                  📒 Registrar en Libreta de Créditos (${totalAmount.toLocaleString()})
+                  📒 Registrar en Libreta de Créditos ({formatMoney(totalAmount)})
                 </Text>
               </TouchableOpacity>
             )}

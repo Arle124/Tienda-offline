@@ -20,6 +20,7 @@ import {
   CustomerLedgerItem,
 } from '../../database';
 import { CustomAlert, AlertType } from '../../components/CustomAlert';
+import { useSettings } from '../../context/SettingsContext';
 
 interface DebtorsScreenProps {
   customers: LocalCustomer[];
@@ -32,6 +33,7 @@ export function DebtorsScreen({
   role,
   onRefreshData,
 }: DebtorsScreenProps) {
+  const { formatMoney, storeName } = useSettings();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<LocalCustomer | null>(null);
   const [ledgerItems, setLedgerItems] = useState<CustomerLedgerItem[]>([]);
@@ -119,13 +121,13 @@ export function DebtorsScreen({
     if (!selectedCustomer) return;
 
     const hasDebt = (selectedCustomer.current_debt || 0) > 0;
-    const debtStr = (selectedCustomer.current_debt || 0).toLocaleString();
+    const debtStr = formatMoney(selectedCustomer.current_debt || 0);
 
     showAlert({
       type: hasDebt ? 'warning' : 'danger',
       title: hasDebt ? '⚠️ Vecino con deuda pendiente' : '¿Eliminar vecino?',
       message: hasDebt
-        ? `"${selectedCustomer.name}" todavía tiene un saldo pendiente de $${debtStr} en la libreta.\n\nSi lo eliminas, su deuda quedará archivada. ¿Seguro que deseas eliminarlo de todas formas?`
+        ? `"${selectedCustomer.name}" todavía tiene un saldo pendiente de ${debtStr} en la libreta.\n\nSi lo eliminas, su deuda quedará archivada. ¿Seguro que deseas eliminarlo de todas formas?`
         : `¿Estás seguro de que deseas eliminar a "${selectedCustomer.name}" de la libreta de créditos?`,
       confirmText: hasDebt ? 'Sí, archivar y eliminar' : 'Sí, eliminar',
       cancelText: 'Cancelar',
@@ -190,7 +192,7 @@ export function DebtorsScreen({
       showAlert({
         type: 'success',
         title: 'Abono Guardado',
-        message: `Se registró un abono de $${amount.toLocaleString()} (${methodTxt}) para ${selectedCustomer.name}.`,
+        message: `Se registró un abono de ${formatMoney(amount)} (${methodTxt}) para ${selectedCustomer.name}.`,
       });
     } catch (err: any) {
       showAlert({
@@ -205,7 +207,7 @@ export function DebtorsScreen({
     if (!selectedCustomer) return;
 
     const customerName = selectedCustomer.name;
-    const debtStr = (selectedCustomer.current_debt || 0).toLocaleString();
+    const debtStr = formatMoney(selectedCustomer.current_debt || 0);
 
     let movementsText = '';
     if (ledgerItems.length > 0) {
@@ -221,10 +223,10 @@ export function DebtorsScreen({
               m.items && m.items.length > 0
                 ? `\n   ${m.items.map((i) => `• ${i.quantity}x ${i.productName}`).join('\n   ')}`
                 : '';
-            return `📅 ${dateStr} - Compra a Crédito: +$${m.amount.toLocaleString()}${itemsSummary}`;
+            return `📅 ${dateStr} - Compra a Crédito: +${formatMoney(m.amount)}${itemsSummary}`;
           } else {
             const methodLabel = m.paymentMethod === 'transfer' ? ' (Nequi)' : ' (Efectivo)';
-            return `💵 ${dateStr} - Abono recibido${methodLabel}: -$${m.amount.toLocaleString()}${
+            return `💵 ${dateStr} - Abono recibido${methodLabel}: -${formatMoney(m.amount)}${
               m.notes ? ` (${m.notes})` : ''
             }`;
           }
@@ -234,10 +236,11 @@ export function DebtorsScreen({
       movementsText = 'Sin compras recientes registradas.';
     }
 
+    const businessTitle = storeName ? storeName.toUpperCase() : 'MI CUADERNO DIGITAL';
     const message =
-      `🛒 *MI CUADERNO DIGITAL - ESTADO DE CUENTA*\n\n` +
+      `🛒 *${businessTitle} - ESTADO DE CUENTA*\n\n` +
       `Hola *${customerName}*, le compartimos el detalle de su saldo en la tienda:\n\n` +
-      `💰 *SALDO TOTAL PENDIENTE: $${debtStr}*\n\n` +
+      `💰 *SALDO TOTAL PENDIENTE: ${debtStr}*\n\n` +
       `📝 *Últimos movimientos:*\n${movementsText}\n\n` +
       `¡Muchas gracias por su confianza y preferencia! 🙏`;
 
@@ -338,7 +341,7 @@ export function DebtorsScreen({
           <View>
             <Text style={styles.summaryLabel}>Total Créditos por Cobrar</Text>
             <Text style={styles.summaryValue}>
-              ${totalDebtInStreet.toLocaleString()}
+              {formatMoney(totalDebtInStreet)}
             </Text>
           </View>
           <View style={styles.debtorsCountBadge}>
@@ -413,7 +416,7 @@ export function DebtorsScreen({
                     ]}
                   >
                     {hasDebt
-                      ? `$${cust.current_debt.toLocaleString()}`
+                      ? formatMoney(cust.current_debt)
                       : 'Al día ✅'}
                   </Text>
                 </View>
@@ -472,7 +475,7 @@ export function DebtorsScreen({
                 <View style={styles.sheetDebtCard}>
                   <Text style={styles.sheetDebtLabel}>SALDO TOTAL QUE DEBE:</Text>
                   <Text style={styles.sheetDebtValue}>
-                    ${selectedCustomer.current_debt.toLocaleString()}
+                    {formatMoney(selectedCustomer.current_debt)}
                   </Text>
                 </View>
 
@@ -573,8 +576,8 @@ export function DebtorsScreen({
                               isDebt ? styles.amountDebt : styles.amountPayment,
                             ]}
                           >
-                            {isDebt ? '+' : '−'}$
-                            {item.amount.toLocaleString()}
+                            {isDebt ? '+' : '−'}
+                            {formatMoney(item.amount)}
                           </Text>
                         </View>
 
@@ -590,7 +593,7 @@ export function DebtorsScreen({
                                   • {art.quantity}x {art.productName}
                                 </Text>
                                 <Text style={styles.itemLinePrice}>
-                                  ${art.subtotal.toLocaleString()}
+                                  {formatMoney(art.subtotal)}
                                 </Text>
                               </View>
                             ))}
@@ -621,7 +624,7 @@ export function DebtorsScreen({
               Cliente: {selectedCustomer?.name}
             </Text>
             <Text style={styles.modalDebtHint}>
-              Deuda actual: ${selectedCustomer?.current_debt.toLocaleString()}
+              Deuda actual: {formatMoney(selectedCustomer?.current_debt || 0)}
             </Text>
 
             <Text style={styles.inputLabel}>¿Cuánto va a abonar?</Text>
@@ -653,7 +656,7 @@ export function DebtorsScreen({
                   onPress={() => setPaymentAmount(val.toString())}
                 >
                   <Text style={styles.shortcutChipText}>
-                    ${val.toLocaleString()}
+                    {formatMoney(val)}
                   </Text>
                 </TouchableOpacity>
               ))}

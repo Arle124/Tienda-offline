@@ -26,6 +26,7 @@ import {
   exportCompleteStoreWorkbookToXlsx,
 } from '../../utils/excel';
 import { useToast } from '../../components/Toast';
+import { useSettings } from '../../context/SettingsContext';
 
 interface OwnerScreenProps {
   role: UserRole;
@@ -45,6 +46,7 @@ export function OwnerScreen({
   onRefreshData,
 }: OwnerScreenProps) {
   const { showToast } = useToast();
+  const { formatMoney } = useSettings();
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [todaySummary, setTodaySummary] = useState<TodaySalesSummary | null>(null);
@@ -280,13 +282,13 @@ export function OwnerScreen({
         <View style={[styles.kpiCard, { backgroundColor: '#DCFCE7', borderColor: '#86EFAC', borderWidth: 1 }]}>
           <Text style={styles.kpiLabel}>💵 Efectivo Físico que debe haber en Caja Hoy</Text>
           <Text style={[styles.kpiValue, { color: '#166534' }]}>
-            ${theoreticalCashInDrawer.toLocaleString()}
+            {formatMoney(theoreticalCashInDrawer)}
           </Text>
           <Text style={styles.kpiSub}>
-            Contado: ${todaySummary?.totalCashSales.toLocaleString() || '0'} + Abonos Efectivo: $
-            {todaySummary?.totalCashPaymentsReceived.toLocaleString() || '0'}
+            Contado: {formatMoney(todaySummary?.totalCashSales || 0)} + Abonos Efectivo:{' '}
+            {formatMoney(todaySummary?.totalCashPaymentsReceived || 0)}
             {todayOutflows > 0
-              ? ` − Proveedores: -$${todayOutflows.toLocaleString()}`
+              ? ` − Proveedores: -${formatMoney(todayOutflows)}`
               : ''}
           </Text>
           <Text style={{ fontSize: 11, color: '#15803D', marginTop: 4, fontWeight: '600' }}>
@@ -298,11 +300,11 @@ export function OwnerScreen({
         <View style={[styles.kpiCard, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE', borderWidth: 1, marginTop: 10 }]}>
           <Text style={[styles.kpiLabel, { color: '#3730A3' }]}>📲 Dinero Digital en Nequi / Bancos Hoy</Text>
           <Text style={[styles.kpiValue, { color: '#4338CA' }]}>
-            ${(todaySummary?.totalDigitalInNequi || 0).toLocaleString()}
+            {formatMoney(todaySummary?.totalDigitalInNequi || 0)}
           </Text>
           <Text style={[styles.kpiSub, { color: '#4F46E5' }]}>
-            Ventas Nequi: ${todaySummary?.totalTransferSales.toLocaleString() || '0'} + Abonos Nequi: $
-            {todaySummary?.totalTransferPaymentsReceived.toLocaleString() || '0'}
+            Ventas Nequi: {formatMoney(todaySummary?.totalTransferSales || 0)} + Abonos Nequi:{' '}
+            {formatMoney(todaySummary?.totalTransferPaymentsReceived || 0)}
           </Text>
           <Text style={{ fontSize: 11, color: '#6366F1', marginTop: 4, fontWeight: '600' }}>
             📱 Entró directo a tu aplicación Nequi / Bancolombia. No está en el cajón.
@@ -315,15 +317,15 @@ export function OwnerScreen({
             <View>
               <Text style={[styles.kpiLabel, { color: '#475569' }]}>🌟 Total Ingresos Recaudados Hoy</Text>
               <Text style={[styles.kpiValue, { color: '#0F172A', fontSize: 20 }]}>
-                ${(todaySummary?.totalRevenueToday || 0).toLocaleString()}
+                {formatMoney(todaySummary?.totalRevenueToday || 0)}
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={{ fontSize: 12, color: '#166534', fontWeight: 'bold' }}>
-                💵 Caja: ${todaySummary?.totalPhysicalCashInDrawer.toLocaleString() || '0'}
+                💵 Caja: {formatMoney(todaySummary?.totalPhysicalCashInDrawer || 0)}
               </Text>
               <Text style={{ fontSize: 12, color: '#4338CA', fontWeight: 'bold', marginTop: 2 }}>
-                📲 Nequi: ${todaySummary?.totalDigitalInNequi.toLocaleString() || '0'}
+                📲 Nequi: {formatMoney(todaySummary?.totalDigitalInNequi || 0)}
               </Text>
             </View>
           </View>
@@ -334,14 +336,14 @@ export function OwnerScreen({
           <View style={[styles.kpiCardMini, { backgroundColor: '#FEF9C3' }]}>
             <Text style={styles.kpiMiniLabel}>📝 Crédito Hoy</Text>
             <Text style={[styles.kpiMiniValue, { color: '#854D0E' }]}>
-              ${todaySummary?.totalDebtSales.toLocaleString() || '0'}
+              {formatMoney(todaySummary?.totalDebtSales || 0)}
             </Text>
           </View>
 
           <View style={[styles.kpiCardMini, { backgroundColor: '#FEE2E2' }]}>
             <Text style={styles.kpiMiniLabel}>📒 Total Cartera</Text>
             <Text style={[styles.kpiMiniValue, { color: '#991B1B' }]}>
-              ${totalStreetDebt.toLocaleString()}
+              {formatMoney(totalStreetDebt)}
             </Text>
           </View>
         </View>
@@ -350,11 +352,11 @@ export function OwnerScreen({
         {todayOutflows > 0 && (
           <View style={[styles.kpiCardMini, { backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1, marginTop: 10, width: '100%' }]}>
             <Text style={[styles.kpiMiniLabel, { color: '#991B1B', fontWeight: 'bold', fontSize: 13 }]}>
-              🚚 Salidas de Caja a Proveedores: -${todayOutflows.toLocaleString()}
+              🚚 Salidas de Caja a Proveedores: -{formatMoney(todayOutflows)}
             </Text>
             {billsPaidToday.map((b) => (
               <Text key={b.id} style={{ fontSize: 12, color: '#7F1D1D', marginTop: 3 }}>
-                • {b.supplier_name}: ${b.total_amount.toLocaleString()} ({b.notes || 'Pagado de caja'})
+                • {b.supplier_name}: {formatMoney(b.total_amount)} ({b.notes || 'Pagado de caja'})
               </Text>
             ))}
           </View>
@@ -394,12 +396,12 @@ export function OwnerScreen({
               {cashDifference === 0
                 ? '✅ ¡Caja Cuadrada Perfecta!'
                 : cashDifference > 0
-                ? `🟢 Sobrante en Caja: +$${cashDifference.toLocaleString()}`
-                : `🔴 Faltante en Caja: -$${Math.abs(cashDifference).toLocaleString()}`}
+                ? `🟢 Sobrante en Caja: +${formatMoney(cashDifference)}`
+                : `🔴 Faltante en Caja: -${formatMoney(Math.abs(cashDifference))}`}
             </Text>
             <Text style={styles.diffDetails}>
-              En sistema: ${theoreticalCashInDrawer.toLocaleString()} • En mano: $
-              {countedNum.toLocaleString()}
+              En sistema: {formatMoney(theoreticalCashInDrawer)} • En mano:{' '}
+              {formatMoney(countedNum)}
             </Text>
           </View>
         )}

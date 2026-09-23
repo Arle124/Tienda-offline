@@ -10,6 +10,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 
+import { useSettings } from '../context/SettingsContext';
+
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 export interface ToastOptions {
@@ -33,12 +35,14 @@ export const useToast = () => useContext(ToastContext);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
+  const { hapticEnabled } = useSettings();
   const [toast, setToast] = useState<ToastOptions | null>(null);
   const translateY = useRef(new Animated.Value(-120)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const triggerHaptic = (type: ToastType) => {
+    if (!hapticEnabled) return;
     try {
       if (Platform.OS !== 'web') {
         if (type === 'success') {
