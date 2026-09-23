@@ -41,11 +41,16 @@
   * Eliminación de términos exclusivos de género como "Dueña" y "Tendera".
   * Nueva nomenclatura operativa: `👤 Mostrador` (rol operativo) y `💼 Administración` (rol de gerencia y cierre).
   * Seguridad renovada: `PIN de Administrador`.
-* **Rediseño Estructural de Reportes Excel (.xlsx) con Filtros Nativos:**
+* **Rediseño Estructural de Reportes Excel (.xlsx) con Filtros Nativos y Estilos Pasteles:**
   * Eliminación de datos sueltos y textos desalineados en las 4 hojas del sistema (*Ventas*, *Libreta de Créditos*, *Inventario*, *Cierre de Caja*).
-  * Incorporación de **Autofiltros Nativos de Excel (`!autofilter`)** en cada encabezado de columna para que el usuario pueda ordenar, clasificar y filtrar (por montos, fechas, medios de pago o estado) directamente desde Excel o Google Sheets.
-  * Encabezados institucionales con celdas combinadas (`!merges`) y metadatos de corte.
-  * Formato estructurado tipo tabla con columnas uniformes, fila de totales claramente delimitada y tipado numérico de moneda (`"$"#,##0`).
+  * **Erradicación total de emojis en las hojas de Excel:** Reportes 100% limpios y corporativos, eliminando emoticones decorativos de títulos, encabezados y celdas.
+  * **Paleta de Colores Pasteles Suaves y Bordes Delimitados:**
+    * Migración al motor `xlsx-js-style` con soporte completo de estilos nativos en celdas (`cell.s`).
+    * Colores temáticos pálidos para descansada lectura: Verde menta suave (`#DCFCE7`) en Ventas, Ámbar crema (`#FEF3C7`) en Créditos, Azul cielo suave (`#E0F2FE`) en Inventario y Lavanda tenue (`#EDE9FE`) en Cierre de Caja.
+    * Alternancia sutil de filas (*zebra striping* blanco / gris perla `#F8FAFC`) y bordes delgados `#E2E8F0` que separan nítidamente cada celda.
+    * Resaltado semántico pálido para estados (alertas de stock crítico en rosa suave `#FEE2E2`, saldos pendientes en crema `#FEF3C7`, saldos al día en verde menta `#F0FDF4`).
+    * Fila de totales con doble borde inferior contable estándar.
+  * Incorporación de **Autofiltros Nativos de Excel (`!autofilter`)** en cada columna para clasificar y ordenar datos con un clic.
 
 ### 22 de Septiembre de 2026 - Módulos de Mostrador, Cuaderno de Fiados e Inventario
 * **Navegación por Pestañas Táctiles:** Reemplazo del scroll monolítico de `App.tsx` por 4 pantallas especializadas con barra inferior accesible y badges en tiempo real.
