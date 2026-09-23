@@ -7,7 +7,6 @@ import {
   ScrollView,
   TextInput,
   Modal,
-  Alert,
   Platform,
 } from 'react-native';
 import {
@@ -26,6 +25,7 @@ import {
   exportInventoryToXlsx,
   exportCompleteStoreWorkbookToXlsx,
 } from '../../utils/excel';
+import { useToast } from '../../components/Toast';
 
 interface OwnerScreenProps {
   role: UserRole;
@@ -44,6 +44,7 @@ export function OwnerScreen({
   onRoleChange,
   onRefreshData,
 }: OwnerScreenProps) {
+  const { showToast } = useToast();
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [todaySummary, setTodaySummary] = useState<TodaySalesSummary | null>(null);
@@ -107,9 +108,11 @@ export function OwnerScreen({
       setChangePinModal(false);
       setCurrentPin('');
       setNewPin('');
-      const msg = '✅ PIN de Administrador actualizado con éxito.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Listo', msg);
+      showToast({
+        type: 'success',
+        title: 'PIN Actualizado',
+        message: 'PIN de Administrador actualizado con éxito.',
+      });
     } catch (err: any) {
       setChangePinError(`Error: ${err.message}`);
     }
@@ -120,10 +123,17 @@ export function OwnerScreen({
     try {
       const { sales, items } = await saleRepository.getAllSalesAndItems();
       await exportSalesToXlsx(sales, items, customers);
+      showToast({
+        type: 'success',
+        title: 'Excel Exportado',
+        message: 'Reporte de ventas generado con éxito.',
+      });
     } catch (err: any) {
-      const msg = `Error al exportar ventas a Excel: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      showToast({
+        type: 'error',
+        title: 'Error al exportar ventas',
+        message: err.message,
+      });
     } finally {
       setIsExporting(false);
     }
@@ -133,10 +143,17 @@ export function OwnerScreen({
     setIsExporting(true);
     try {
       await exportDebtorsToXlsx(customers);
+      showToast({
+        type: 'success',
+        title: 'Excel Exportado',
+        message: 'Libreta de créditos generada con éxito.',
+      });
     } catch (err: any) {
-      const msg = `Error al exportar créditos a Excel: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      showToast({
+        type: 'error',
+        title: 'Error al exportar créditos',
+        message: err.message,
+      });
     } finally {
       setIsExporting(false);
     }
@@ -146,10 +163,17 @@ export function OwnerScreen({
     setIsExporting(true);
     try {
       await exportInventoryToXlsx(products);
+      showToast({
+        type: 'success',
+        title: 'Excel Exportado',
+        message: 'Inventario de productos generado con éxito.',
+      });
     } catch (err: any) {
-      const msg = `Error al exportar inventario a Excel: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      showToast({
+        type: 'error',
+        title: 'Error al exportar inventario',
+        message: err.message,
+      });
     } finally {
       setIsExporting(false);
     }
@@ -173,10 +197,17 @@ export function OwnerScreen({
         todayOutflows,
         billsPaidToday,
       });
+      showToast({
+        type: 'success',
+        title: 'Libro Contable Exportado',
+        message: 'Cuaderno completo de la tienda generado en Excel.',
+      });
     } catch (err: any) {
-      const msg = `Error al exportar libro completo a Excel: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      showToast({
+        type: 'error',
+        title: 'Error al exportar libro completo',
+        message: err.message,
+      });
     } finally {
       setIsExporting(false);
     }
@@ -469,12 +500,14 @@ export function OwnerScreen({
             style={styles.syncBtn}
             onPress={async () => {
               await onRefreshData();
-              const msg =
-                pendingCount > 0
-                  ? `Se enviaron ${pendingCount} transacciones a la cola de sincronización.`
-                  : 'Todos los datos locales ya están al día.';
-              if (Platform.OS === 'web') alert(msg);
-              else Alert.alert('Sincronización', msg);
+              showToast({
+                type: 'info',
+                title: 'Sincronización',
+                message:
+                  pendingCount > 0
+                    ? `Se enviaron ${pendingCount} transacciones a la cola de sincronización.`
+                    : 'Todos los datos locales ya están al día.',
+              });
             }}
           >
             <Text style={styles.syncBtnText}>🔄 Actualizar</Text>

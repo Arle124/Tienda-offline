@@ -25,6 +25,7 @@ import { PosScreen } from './src/screens/pos/PosScreen';
 import { DebtorsScreen } from './src/screens/debtors/DebtorsScreen';
 import { InventoryScreen } from './src/screens/inventory/InventoryScreen';
 import { OwnerScreen } from './src/screens/owner/OwnerScreen';
+import { ToastProvider } from './src/components/Toast';
 
 type TabKey = 'pos' | 'debtors' | 'inventory' | 'owner';
 
@@ -123,8 +124,9 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
-        <StatusBar style="light" />
+      <ToastProvider>
+        <SafeAreaView style={styles.container}>
+          <StatusBar style="light" />
 
       {/* Cabecera Superior */}
       <View style={styles.header}>
@@ -335,7 +337,8 @@ export default function App() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+        </SafeAreaView>
+      </ToastProvider>
     </SafeAreaProvider>
   );
 }

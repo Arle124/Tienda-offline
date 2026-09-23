@@ -7,7 +7,6 @@ import {
   ScrollView,
   TextInput,
   Modal,
-  Alert,
   Platform,
 } from 'react-native';
 import {
@@ -18,6 +17,7 @@ import {
   customerRepository,
   supplierRepository,
 } from '../../database';
+import { useToast } from '../../components/Toast';
 
 interface PosScreenProps {
   products: LocalProduct[];
@@ -34,6 +34,8 @@ export function PosScreen({
   onSaleCompleted,
   onGoToDebtors,
 }: PosScreenProps) {
+  const { showToast } = useToast();
+
   // Carrito de compras
   const [cart, setCart] = useState<
     Array<{
@@ -110,9 +112,11 @@ export function PosScreen({
   const handleAddFreeItem = () => {
     const price = parseFloat(freeItemPrice.replace(/[^0-9]/g, ''));
     if (isNaN(price) || price <= 0) {
-      const msg = 'Por favor ingresa un precio válido';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Atención', msg);
+      showToast({
+        type: 'warning',
+        title: 'Precio no válido',
+        message: 'Por favor ingresa un precio mayor a cero.',
+      });
       return;
     }
 
@@ -139,16 +143,20 @@ export function PosScreen({
   const handleSaveOutflow = async () => {
     const amount = parseFloat(outflowAmount.replace(/[^0-9]/g, ''));
     if (isNaN(amount) || amount <= 0) {
-      const msg = 'Ingresa un monto válido para la salida de dinero.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Atención', msg);
+      showToast({
+        type: 'warning',
+        title: 'Monto no válido',
+        message: 'Ingresa un monto válido para la salida de dinero.',
+      });
       return;
     }
 
     if (!outflowConcept.trim()) {
-      const msg = 'Indica el proveedor o concepto (ej. Bimbo, Panadería, Bolsas).';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Atención', msg);
+      showToast({
+        type: 'warning',
+        title: 'Concepto requerido',
+        message: 'Indica el proveedor o concepto (ej. Bimbo, Panadería, Bolsas).',
+      });
       return;
     }
 
@@ -168,21 +176,27 @@ export function PosScreen({
       setOutflowModalVisible(false);
       await onSaleCompleted();
 
-      const msg = `✅ Salida de $${amount.toLocaleString()} registrada (${outflowConcept.trim()}).`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Salida Registrada', msg);
+      showToast({
+        type: 'success',
+        title: 'Salida Registrada',
+        message: `Monto: $${amount.toLocaleString()} • ${outflowConcept.trim()}`,
+      });
     } catch (err: any) {
-      const msg = `Error al registrar salida: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      showToast({
+        type: 'error',
+        title: 'Error al registrar salida',
+        message: err.message,
+      });
     }
   };
 
   const handleQuickCreateCustomer = async () => {
     if (!newCustName.trim()) {
-      const msg = 'El nombre del cliente es obligatorio';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Atención', msg);
+      showToast({
+        type: 'warning',
+        title: 'Nombre requerido',
+        message: 'El nombre del cliente es obligatorio.',
+      });
       return;
     }
 
@@ -200,10 +214,18 @@ export function PosScreen({
       setQuickCustomerModal(false);
       setSelectedCustomerId(created.id);
       await onSaleCompleted();
+
+      showToast({
+        type: 'success',
+        title: 'Cliente Creado',
+        message: `${created.name} agregado a la libreta.`,
+      });
     } catch (err: any) {
-      const msg = `Error creando cliente: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      showToast({
+        type: 'error',
+        title: 'Error creando cliente',
+        message: err.message,
+      });
     }
   };
 
@@ -226,16 +248,23 @@ export function PosScreen({
         })),
       });
 
-      const message = `✅ Venta en efectivo cobrada exitosamente por $${totalAmount.toLocaleString()}`;
+      const change = receivedCash !== null && receivedCash >= totalAmount ? receivedCash - totalAmount : 0;
+      const changeText = change > 0 ? ` • Cambio: $${change.toLocaleString()}` : '';
+
       clearCart();
       await onSaleCompleted();
 
-      if (Platform.OS === 'web') alert(message);
-      else Alert.alert('Venta Registrada', message);
+      showToast({
+        type: 'success',
+        title: 'Venta en Efectivo Cobrada',
+        message: `Total: $${totalAmount.toLocaleString()}${changeText}`,
+      });
     } catch (err: any) {
-      const msg = `Error al registrar venta: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      showToast({
+        type: 'error',
+        title: 'Error al registrar venta',
+        message: err.message,
+      });
     }
   };
 
@@ -260,25 +289,31 @@ export function PosScreen({
         })),
       });
 
-      const message = `✅ Venta Nequi/Transferencia registrada ($${totalAmount.toLocaleString()}). Dinero en cuenta digital.`;
       clearCart();
       await onSaleCompleted();
 
-      if (Platform.OS === 'web') alert(message);
-      else Alert.alert('Venta Digital Registrada', message);
+      showToast({
+        type: 'success',
+        title: 'Venta Digital Registrada',
+        message: `$${totalAmount.toLocaleString()} vía Nequi / Transferencia.`,
+      });
     } catch (err: any) {
-      const msg = `Error al registrar venta por Nequi: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      showToast({
+        type: 'error',
+        title: 'Error al registrar venta Nequi',
+        message: err.message,
+      });
     }
   };
 
   const handleDebtSale = async () => {
     if (cart.length === 0) return;
     if (!selectedCustomerId) {
-      const msg = 'Selecciona el cliente a quien le vas a otorgar el crédito.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Atención', msg);
+      showToast({
+        type: 'warning',
+        title: 'Cliente no seleccionado',
+        message: 'Selecciona el cliente a quien le vas a otorgar el crédito.',
+      });
       return;
     }
 
@@ -301,16 +336,20 @@ export function PosScreen({
         })),
       });
 
-      const message = `📝 Crédito registrado para ${customer?.name || 'cliente'}. Monto: $${totalAmount.toLocaleString()}`;
       clearCart();
       await onSaleCompleted();
 
-      if (Platform.OS === 'web') alert(message);
-      else Alert.alert('Crédito Guardado en Libreta', message);
+      showToast({
+        type: 'success',
+        title: 'Crédito Guardado en Libreta',
+        message: `${customer?.name || 'Cliente'} • $${totalAmount.toLocaleString()}`,
+      });
     } catch (err: any) {
-      const msg = `Error al registrar crédito: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      showToast({
+        type: 'error',
+        title: 'Error al registrar crédito',
+        message: err.message,
+      });
     }
   };
 
