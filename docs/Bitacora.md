@@ -41,9 +41,11 @@
   * Eliminación de términos exclusivos de género como "Dueña" y "Tendera".
   * Nueva nomenclatura operativa: `👤 Mostrador` (rol operativo) y `💼 Administración` (rol de gerencia y cierre).
   * Seguridad renovada: `PIN de Administrador`.
-* **Análisis de Estrategia de Nube y Sincronización:**
-  * Evaluación de respaldo estilo WhatsApp mediante **Google Drive AppData Folder** (Costo $0/mes, privacidad total).
-  * Definición de arquitectura de bajo costo en AWS (Lightsail $3.50-$5/mes o Serverless HTTP API + Lambda + Turso $0/mes) para sincronización multi-caja.
+* **Rediseño Estructural de Reportes Excel (.xlsx) con Filtros Nativos:**
+  * Eliminación de datos sueltos y textos desalineados en las 4 hojas del sistema (*Ventas*, *Libreta de Créditos*, *Inventario*, *Cierre de Caja*).
+  * Incorporación de **Autofiltros Nativos de Excel (`!autofilter`)** en cada encabezado de columna para que el usuario pueda ordenar, clasificar y filtrar (por montos, fechas, medios de pago o estado) directamente desde Excel o Google Sheets.
+  * Encabezados institucionales con celdas combinadas (`!merges`) y metadatos de corte.
+  * Formato estructurado tipo tabla con columnas uniformes, fila de totales claramente delimitada y tipado numérico de moneda (`"$"#,##0`).
 
 ### 22 de Septiembre de 2026 - Módulos de Mostrador, Cuaderno de Fiados e Inventario
 * **Navegación por Pestañas Táctiles:** Reemplazo del scroll monolítico de `App.tsx` por 4 pantallas especializadas con barra inferior accesible y badges en tiempo real.

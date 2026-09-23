@@ -59,7 +59,7 @@ export async function shareOrDownloadXlsx(
 }
 
 /**
- * Genera la hoja de cálculo de Ventas
+ * Genera la hoja de cálculo estructurada de Ventas con filtros nativos
  */
 export function buildSalesWorksheet(
   sales: LocalSale[],
@@ -77,106 +77,151 @@ export function buildSalesWorksheet(
 
   let sumTotal = 0;
   let sumCash = 0;
+  let sumTransfer = 0;
   let sumDebt = 0;
+  let sumItemsCount = 0;
 
   const now = new Date();
   const dateStr = now.toLocaleDateString();
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   const rows: any[][] = [
-    ['🏪 EL CUADERNO DIGITAL - REPORTE DE VENTAS'],
-    [`Generado el: ${dateStr} a las ${timeStr}`, '', '', '', '', '', '', '', '', ''],
+    ['🏪 EL CUADERNO DIGITAL • REPORTE DETALLADO DE VENTAS'],
+    [`Generado el: ${dateStr} a las ${timeStr} | Total Registros: ${sales.length} ventas | Moneda: COP ($)`],
     [],
     [
+      'N°',
       'Venta #',
       'Fecha',
       'Hora',
-      'Tipo de Pago',
-      'Cliente / Vecino',
+      'Medio de Pago',
+      'Cliente / Cuenta',
       'Total Venta ($)',
-      'Efectivo ($)',
-      'Crédito ($)',
-      'Artículos Vendidos',
-      'Notas',
+      'Efectivo Recibido ($)',
+      'Nequi / Digital ($)',
+      'Crédito Otorgado ($)',
+      'Cant. Artículos',
+      'Detalle de Artículos Vendidos',
+      'Notas / Observaciones',
     ],
   ];
 
   const headerRowIndex = 4; // Fila 4 (1-indexed)
   let currentRow = headerRowIndex;
 
-  for (const s of sales) {
+  if (sales.length === 0) {
     currentRow++;
-    sumTotal += s.total_amount || 0;
-    sumCash += s.cash_amount || 0;
-    sumDebt += s.debt_amount || 0;
+    rows.push([1, '-', dateStr, timeStr, '-', 'Sin ventas registradas', 0, 0, 0, 0, 0, '-', '-']);
+  } else {
+    let itemIdx = 0;
+    for (const s of sales) {
+      itemIdx++;
+      currentRow++;
 
-    const cust = s.customer_id ? customerMap.get(s.customer_id) : undefined;
-    const custName = cust
-      ? `${cust.name}${cust.alias ? ` (${cust.alias})` : ''}`
-      : 'Cliente Mostrador';
+      const isCash = s.payment_type === 'cash';
+      const isTransfer = s.payment_type === 'transfer';
+      const isDebt = s.payment_type === 'debt';
 
-    const saleItems = itemsBySale.get(s.id) || [];
-    const itemsSummary = saleItems
-      .map((i) => `${i.quantity}x ${i.product_name} ($${i.subtotal})`)
-      .join(' | ');
+      const total = s.total_amount || 0;
+      const cash = isCash ? (s.cash_amount || total) : (s.cash_amount || 0);
+      const transfer = isTransfer ? total : 0;
+      const debt = isDebt ? (s.debt_amount || total) : (s.debt_amount || 0);
 
-    const saleDate = new Date(s.created_at);
+      sumTotal += total;
+      sumCash += cash;
+      sumTransfer += transfer;
+      sumDebt += debt;
 
-    rows.push([
-      s.sale_number,
-      saleDate.toLocaleDateString(),
-      saleDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      s.payment_type === 'cash'
-        ? 'Efectivo Contado'
-        : s.payment_type === 'transfer'
-        ? 'Nequi / Transferencia'
-        : 'Crédito Libreta',
-      custName,
-      s.total_amount || 0,
-      s.cash_amount || 0,
-      s.debt_amount || 0,
-      itemsSummary || s.notes || 'Venta directa',
-      s.notes || '',
-    ]);
+      const cust = s.customer_id ? customerMap.get(s.customer_id) : undefined;
+      const custName = cust
+        ? `${cust.name}${cust.alias ? ` (${cust.alias})` : ''}`
+        : 'Cliente Mostrador';
+
+      const saleItems = itemsBySale.get(s.id) || [];
+      const itemsCount = saleItems.reduce((acc, i) => acc + (i.quantity || 0), 0);
+      sumItemsCount += itemsCount;
+
+      const itemsSummary = saleItems
+        .map((i) => `${i.quantity}x ${i.product_name} ($${i.subtotal?.toLocaleString() || 0})`)
+        .join(' | ');
+
+      const saleDate = new Date(s.created_at);
+
+      rows.push([
+        itemIdx,
+        s.sale_number,
+        saleDate.toLocaleDateString(),
+        saleDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isCash
+          ? '💵 Efectivo Contado'
+          : isTransfer
+          ? '📲 Nequi / Transf.'
+          : '📒 Crédito Libreta',
+        custName,
+        total,
+        cash,
+        transfer,
+        debt,
+        itemsCount,
+        itemsSummary || s.notes || 'Venta directa',
+        s.notes || '',
+      ]);
+    }
   }
 
-  // Fila de Totales
+  const lastDataRow = currentRow;
+
+  // Fila de separación y Fila de Totales
   currentRow++;
   rows.push([]);
   currentRow++;
   const totalRowIndex = currentRow;
+
   rows.push([
-    'TOTALES GENERALES',
+    'RESUMEN GENERAL DE TOTALES',
     '',
     '',
     '',
-    `${sales.length} ventas registradas`,
+    '',
+    `${sales.length} ventas en total`,
     sumTotal,
     sumCash,
+    sumTransfer,
     sumDebt,
+    sumItemsCount,
     '',
     '',
   ]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
-  // Anchos de columna calculados
   ws['!cols'] = [
-    { wch: 12 }, // Venta #
+    { wch: 6 },  // N°
+    { wch: 10 }, // Venta #
     { wch: 13 }, // Fecha
     { wch: 10 }, // Hora
-    { wch: 18 }, // Tipo de Pago
+    { wch: 22 }, // Medio de Pago
     { wch: 26 }, // Cliente
-    { wch: 16 }, // Total Venta
-    { wch: 16 }, // Efectivo
-    { wch: 16 }, // Crédito
-    { wch: 45 }, // Artículos
+    { wch: 17 }, // Total Venta ($)
+    { wch: 19 }, // Efectivo ($)
+    { wch: 19 }, // Nequi ($)
+    { wch: 19 }, // Crédito ($)
+    { wch: 14 }, // Cant. Artículos
+    { wch: 45 }, // Detalle Artículos
     { wch: 25 }, // Notas
   ];
 
-  // Aplicar formato de moneda a las columnas F (Total), G (Efectivo), H (Crédito)
-  const moneyCols = ['F', 'G', 'H'];
-  for (let r = headerRowIndex + 1; r <= totalRowIndex; r++) {
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 12 } }, // Título A1:M1
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 12 } }, // Subtítulo A2:M2
+    { s: { r: totalRowIndex - 1, c: 0 }, e: { r: totalRowIndex - 1, c: 4 } }, // Totales etiqueta A:E
+  ];
+
+  ws['!autofilter'] = { ref: `A4:M${lastDataRow}` };
+
+  // Formato de moneda para columnas G (Total), H (Efectivo), I (Nequi), J (Crédito)
+  const moneyCols = ['G', 'H', 'I', 'J'];
+  for (let r = headerRowIndex + 1; r <= lastDataRow; r++) {
     for (const col of moneyCols) {
       const cellRef = `${col}${r}`;
       if (ws[cellRef] && typeof ws[cellRef].v === 'number') {
@@ -184,12 +229,19 @@ export function buildSalesWorksheet(
       }
     }
   }
+  // Y a la fila de totales
+  for (const col of moneyCols) {
+    const cellRef = `${col}${totalRowIndex}`;
+    if (ws[cellRef] && typeof ws[cellRef].v === 'number') {
+      ws[cellRef].z = CURRENCY_FORMAT;
+    }
+  }
 
   return ws;
 }
 
 /**
- * Genera la hoja de cálculo de la Libreta de Créditos (Cartera)
+ * Genera la hoja de cálculo estructurada de la Libreta de Créditos (Cartera) con filtros
  */
 export function buildDebtorsWorksheet(customers: LocalCustomer[]): XLSX.WorkSheet {
   let totalDebt = 0;
@@ -204,53 +256,65 @@ export function buildDebtorsWorksheet(customers: LocalCustomer[]): XLSX.WorkShee
   );
 
   const rows: any[][] = [
-    ['📒 EL CUADERNO DIGITAL - LIBRETA DE CRÉDITOS (CARTERA)'],
-    [`Generado el: ${dateStr} a las ${timeStr}`, '', '', '', '', '', ''],
+    ['📒 EL CUADERNO DIGITAL • LIBRETA DE CRÉDITOS Y CARTERA'],
+    [`Generado el: ${dateStr} a las ${timeStr} | Total Clientes: ${customers.length} | Moneda: COP ($)`],
     [],
     [
+      'N°',
       'Nombre del Cliente',
       'Apodo / Referencia',
       'Teléfono',
       'Saldo Pendiente ($)',
-      'Estado',
+      'Estado de Cartera',
       'Último Movimiento',
-      'Notas',
+      'Notas / Observaciones',
     ],
   ];
 
   const headerRowIndex = 4;
   let currentRow = headerRowIndex;
 
-  for (const c of sorted) {
+  if (sorted.length === 0) {
     currentRow++;
-    const debt = c.current_debt || 0;
-    totalDebt += debt;
-    if (debt > 0) debtorsCount++;
+    rows.push([1, 'Sin clientes registrados', '-', '-', 0, '✅ AL DÍA ($0)', dateStr, '-']);
+  } else {
+    let idx = 0;
+    for (const c of sorted) {
+      idx++;
+      currentRow++;
+      const debt = c.current_debt || 0;
+      totalDebt += debt;
+      if (debt > 0) debtorsCount++;
 
-    const lastUpdated = new Date(c.updated_at).toLocaleDateString();
+      const lastUpdated = new Date(c.updated_at).toLocaleDateString();
 
-    rows.push([
-      c.name,
-      c.alias || '',
-      c.phone || '',
-      debt,
-      debt > 0 ? 'Con Deuda Pendiente ⚠️' : 'Al Día ✅',
-      lastUpdated,
-      c.notes || '',
-    ]);
+      rows.push([
+        idx,
+        c.name,
+        c.alias || '',
+        c.phone || '',
+        debt,
+        debt > 0 ? '⚠️ CON DEUDA PENDIENTE' : '✅ AL DÍA ($0)',
+        lastUpdated,
+        c.notes || '',
+      ]);
+    }
   }
 
-  // Fila de Totales
+  const lastDataRow = currentRow;
+
   currentRow++;
   rows.push([]);
   currentRow++;
   const totalRowIndex = currentRow;
+
   rows.push([
-    'TOTAL CARTERA EN LA CALLE',
+    'TOTAL CARTERA POR COBRAR',
+    '',
     '',
     `${debtorsCount} clientes con saldo`,
     totalDebt,
-    '',
+    `${customers.length - debtorsCount} clientes al día`,
     '',
     '',
   ]);
@@ -258,18 +322,175 @@ export function buildDebtorsWorksheet(customers: LocalCustomer[]): XLSX.WorkShee
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
   ws['!cols'] = [
+    { wch: 6 },  // N°
     { wch: 28 }, // Nombre
     { wch: 24 }, // Apodo
     { wch: 16 }, // Teléfono
-    { wch: 20 }, // Saldo Pendiente
-    { wch: 24 }, // Estado
+    { wch: 20 }, // Saldo Pendiente ($)
+    { wch: 26 }, // Estado
     { wch: 18 }, // Último Movimiento
     { wch: 30 }, // Notas
   ];
 
-  // Formato de moneda a columna D (Saldo Pendiente)
-  for (let r = headerRowIndex + 1; r <= totalRowIndex; r++) {
-    const cellRef = `D${r}`;
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }, // Título A1:H1
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } }, // Subtítulo A2:H2
+    { s: { r: totalRowIndex - 1, c: 0 }, e: { r: totalRowIndex - 1, c: 2 } }, // Totales etiqueta A:C
+  ];
+
+  ws['!autofilter'] = { ref: `A4:H${lastDataRow}` };
+
+  // Formato de moneda para columna E (Saldo Pendiente)
+  for (let r = headerRowIndex + 1; r <= lastDataRow; r++) {
+    const cellRef = `E${r}`;
+    if (ws[cellRef] && typeof ws[cellRef].v === 'number') {
+      ws[cellRef].z = CURRENCY_FORMAT;
+    }
+  }
+  // Y fila de totales
+  const totalCellRef = `E${totalRowIndex}`;
+  if (ws[totalCellRef] && typeof ws[totalCellRef].v === 'number') {
+    ws[totalCellRef].z = CURRENCY_FORMAT;
+  }
+
+  return ws;
+}
+
+/**
+ * Genera la hoja de cálculo estructurada de Inventario y Existencias con filtros
+ */
+export function buildInventoryWorksheet(products: LocalProduct[]): XLSX.WorkSheet {
+  let totalInvested = 0;
+  let totalRetail = 0;
+  let totalUnits = 0;
+  let lowStockCount = 0;
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString();
+  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const rows: any[][] = [
+    ['📦 EL CUADERNO DIGITAL • INVENTARIO Y VALORIZACIÓN DE MERCANCÍA'],
+    [`Generado el: ${dateStr} a las ${timeStr} | Catálogo: ${products.length} productos | Moneda: COP ($)`],
+    [],
+    [
+      'N°',
+      'Producto / Mercancía',
+      'Stock Actual',
+      'Alerta Mínima',
+      'Precio Venta ($)',
+      'Costo Proveedor ($)',
+      'Inversión Total ($)',
+      'Valor en Venta ($)',
+      'Ganancia Estimada ($)',
+      'Margen (%)',
+      'Estado de Existencias',
+    ],
+  ];
+
+  const headerRowIndex = 4;
+  let currentRow = headerRowIndex;
+
+  if (products.length === 0) {
+    currentRow++;
+    rows.push([1, 'Sin productos en catálogo', 0, 0, 0, 0, 0, 0, 0, '0.0%', 'Normal']);
+  } else {
+    let idx = 0;
+    for (const p of products) {
+      idx++;
+      currentRow++;
+      const stock = p.current_stock || 0;
+      const cost = p.cost_price || 0;
+      const price = p.price || 0;
+      const invested = stock * cost;
+      const retail = stock * price;
+      const profit = retail - invested;
+      const margin = price > 0 ? `${(((price - cost) / price) * 100).toFixed(1)}%` : '0.0%';
+
+      totalInvested += invested;
+      totalRetail += retail;
+      totalUnits += stock;
+
+      const isLow = stock <= (p.min_stock_alert || 0);
+      if (isLow) lowStockCount++;
+
+      rows.push([
+        idx,
+        p.name,
+        stock,
+        p.min_stock_alert ?? 3,
+        price,
+        cost,
+        invested,
+        retail,
+        profit,
+        margin,
+        isLow ? '⚠️ AGOTÁNDOSE' : '✅ DISPONIBLE',
+      ]);
+    }
+  }
+
+  const lastDataRow = currentRow;
+
+  currentRow++;
+  rows.push([]);
+  currentRow++;
+  const totalRowIndex = currentRow;
+
+  const totalProfit = totalRetail - totalInvested;
+  const overallMargin = totalRetail > 0 ? `${((totalProfit / totalRetail) * 100).toFixed(1)}%` : '0.0%';
+
+  rows.push([
+    'VALORIZACIÓN TOTAL DEL INVENTARIO',
+    `${products.length} productos registrados`,
+    totalUnits,
+    `${lowStockCount} agotándose`,
+    '',
+    '',
+    totalInvested,
+    totalRetail,
+    totalProfit,
+    overallMargin,
+    '',
+  ]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  ws['!cols'] = [
+    { wch: 6 },  // N°
+    { wch: 32 }, // Producto
+    { wch: 14 }, // Stock
+    { wch: 14 }, // Alerta Mín
+    { wch: 16 }, // Precio Venta
+    { wch: 16 }, // Costo Proveedor
+    { wch: 18 }, // Inversión Total
+    { wch: 18 }, // Valor en Venta
+    { wch: 20 }, // Ganancia Estimada
+    { wch: 14 }, // Margen %
+    { wch: 18 }, // Estado
+  ];
+
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }, // Título A1:K1
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 10 } }, // Subtítulo A2:K2
+    { s: { r: totalRowIndex - 1, c: 0 }, e: { r: totalRowIndex - 1, c: 1 } }, // Totales A:B
+  ];
+
+  ws['!autofilter'] = { ref: `A4:K${lastDataRow}` };
+
+  // Formato de moneda para columnas E (Precio), F (Costo), G (Invertido), H (Valor Venta), I (Ganancia)
+  const moneyCols = ['E', 'F', 'G', 'H', 'I'];
+  for (let r = headerRowIndex + 1; r <= lastDataRow; r++) {
+    for (const col of moneyCols) {
+      const cellRef = `${col}${r}`;
+      if (ws[cellRef] && typeof ws[cellRef].v === 'number') {
+        ws[cellRef].z = CURRENCY_FORMAT;
+      }
+    }
+  }
+  // Y totales
+  for (const col of ['G', 'H', 'I']) {
+    const cellRef = `${col}${totalRowIndex}`;
     if (ws[cellRef] && typeof ws[cellRef].v === 'number') {
       ws[cellRef].z = CURRENCY_FORMAT;
     }
@@ -279,112 +500,7 @@ export function buildDebtorsWorksheet(customers: LocalCustomer[]): XLSX.WorkShee
 }
 
 /**
- * Genera la hoja de cálculo de Inventario y Existencias
- */
-export function buildInventoryWorksheet(products: LocalProduct[]): XLSX.WorkSheet {
-  let totalInvested = 0;
-  let totalRetail = 0;
-  let totalUnits = 0;
-
-  const now = new Date();
-  const dateStr = now.toLocaleDateString();
-  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  const rows: any[][] = [
-    ['📦 EL CUADERNO DIGITAL - INVENTARIO Y VALORIZACIÓN DE MERCANCÍA'],
-    [`Generado el: ${dateStr} a las ${timeStr}`, '', '', '', '', '', '', '', ''],
-    [],
-    [
-      'Producto',
-      'Stock Actual',
-      'Precio Venta ($)',
-      'Costo Proveedor ($)',
-      'Alerta Mín.',
-      'Total Invertido ($)',
-      'Valor en Venta ($)',
-      'Ganancia Estimada ($)',
-      'Estado',
-    ],
-  ];
-
-  const headerRowIndex = 4;
-  let currentRow = headerRowIndex;
-
-  for (const p of products) {
-    currentRow++;
-    const stock = p.current_stock || 0;
-    const cost = p.cost_price || 0;
-    const price = p.price || 0;
-    const invested = stock * cost;
-    const retail = stock * price;
-    const profit = retail - invested;
-
-    totalInvested += invested;
-    totalRetail += retail;
-    totalUnits += stock;
-
-    const isLow = stock <= (p.min_stock_alert || 0);
-
-    rows.push([
-      p.name,
-      stock,
-      price,
-      cost,
-      p.min_stock_alert,
-      invested,
-      retail,
-      profit,
-      isLow ? '⚠️ AGOTÁNDOSE' : 'Normal',
-    ]);
-  }
-
-  // Fila de Totales
-  currentRow++;
-  rows.push([]);
-  currentRow++;
-  const totalRowIndex = currentRow;
-  rows.push([
-    'VALORIZACIÓN TOTAL DEL NEGOCIO',
-    `${totalUnits} unidades en tienda`,
-    '',
-    '',
-    '',
-    totalInvested,
-    totalRetail,
-    totalRetail - totalInvested,
-    '',
-  ]);
-
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-
-  ws['!cols'] = [
-    { wch: 32 }, // Producto
-    { wch: 14 }, // Stock
-    { wch: 16 }, // Precio Venta
-    { wch: 16 }, // Costo Proveedor
-    { wch: 14 }, // Alerta Mín
-    { wch: 18 }, // Invertido
-    { wch: 18 }, // Valor Venta
-    { wch: 20 }, // Ganancia
-    { wch: 16 }, // Estado
-  ];
-
-  // Columnas de dinero: C (Precio), D (Costo), F (Invertido), G (Valor Venta), H (Ganancia)
-  const moneyCols = ['C', 'D', 'F', 'G', 'H'];
-  for (let r = headerRowIndex + 1; r <= totalRowIndex; r++) {
-    for (const col of moneyCols) {
-      const cellRef = `${col}${r}`;
-      if (ws[cellRef] && typeof ws[cellRef].v === 'number') {
-        ws[cellRef].z = CURRENCY_FORMAT;
-      }
-    }
-  }
-
-  return ws;
-}
-
-/**
- * Genera la hoja de Cierre de Caja y Finanzas
+ * Genera la hoja de cálculo estructurada de Cierre de Caja y Arqueo Diario con filtros
  */
 export function buildCashSummaryWorksheet(params: {
   todayCashSales: number;
@@ -421,89 +537,142 @@ export function buildCashSummaryWorksheet(params: {
     todayTransferPaymentsReceived;
 
   const rows: any[][] = [
-    ['👑 EL CUADERNO DIGITAL - CIERRE DE CAJA Y ARQUEO DIARIO'],
-    [`Fecha de Corte: ${dateStr} - ${timeStr}`, '', ''],
+    ['💼 EL CUADERNO DIGITAL • CIERRE DIARIO Y ARQUEO DE CAJA'],
+    [`Fecha de Corte: ${dateStr} - ${timeStr} | Responsable: Administración | Moneda: COP ($)`],
     [],
-    ['--- 💵 SECCIÓN 1: EFECTIVO FÍSICO EN CAJÓN DE MOSTRADOR ---', '', ''],
-    ['CONCEPTO', 'MONTO ($)', 'OBSERVACIONES'],
     [
-      '💵 Ventas de Contado en Efectivo',
+      'Ítem',
+      'Módulo Financiero',
+      'Concepto Operativo / Movimiento',
+      'Monto ($)',
+      'Medio de Fondo',
+      'Observaciones y Regla de Cuadre',
+    ],
+    // 💵 Sección 1: Efectivo Físico
+    [
+      1,
+      '💵 Efectivo Físico en Caja',
+      'Ventas de Contado en Mostrador',
       todayCashSales,
-      'Ingresos en billetes/monedas en mostrador',
+      'Monedas y Billetes',
+      'Ingreso físico directo a la caja registradora',
     ],
     [
-      '📥 Abonos a Crédito en Efectivo',
+      2,
+      '💵 Efectivo Físico en Caja',
+      'Abonos de Créditos Recibidos en Efectivo',
       todayCashPaymentsReceived,
-      'Clientes que abonaron en efectivo al cajón',
+      'Monedas y Billetes',
+      'Dinero en efectivo entregado por clientes a cuenta',
     ],
     [
-      '💸 Salidas de Efectivo (Proveedores/Gastos)',
+      3,
+      '💵 Efectivo Físico en Caja',
+      'Salidas de Caja Registradas (Gastos / Proveedores)',
       -todayOutflows,
-      'Pagos a repartidores (Bimbo, Coca-Cola) o gastos sacados del cajón',
+      'Monedas y Billetes',
+      'Salida física de dinero del cajón durante el turno',
     ],
     [
-      '💰 TOTAL EFECTIVO QUE DEBE HABER EN EL CAJÓN',
+      4,
+      '💵 Efectivo Físico en Caja',
+      '💰 SALDO TOTAL ESPERADO EN CAJÓN (ARQUEO FÍSICO)',
       theoreticalCashInDrawer,
-      'Total para contar y cuadrar físicamente',
+      'Monedas y Billetes',
+      'Monto exacto a contar físicamente al cerrar turno',
     ],
-    [],
-    ['--- 📲 SECCIÓN 2: DINERO DIGITAL EN NEQUI / CUENTAS BANCARIAS ---', '', ''],
-    ['CONCEPTO', 'MONTO ($)', 'OBSERVACIONES'],
+    // 📲 Sección 2: Dinero Digital
     [
-      '📲 Ventas Cobradas por Nequi / Transf.',
+      5,
+      '📲 Dinero Digital Bancario',
+      'Ventas Cobradas por Nequi / Transferencia',
       todayTransferSales,
-      'Entró directo a la cuenta Nequi/Bancolombia',
+      'Cuenta Nequi / Bancaria',
+      'Ingresó directamente a la cuenta digital del negocio',
     ],
     [
-      '📥 Abonos a Crédito por Nequi / Transf.',
+      6,
+      '📲 Dinero Digital Bancario',
+      'Abonos de Créditos por Nequi / Transferencia',
       todayTransferPaymentsReceived,
-      'Clientes que transfirieron a tu número',
+      'Cuenta Nequi / Bancaria',
+      'Clientes que transfirieron a la cuenta del negocio',
     ],
     [
-      '📱 TOTAL DINERO EN NEQUI / BANCOS HOY',
+      7,
+      '📲 Dinero Digital Bancario',
+      '📱 TOTAL DINERO DIGITAL RECAUDADO HOY',
       totalDigitalNequi,
-      'Verificar saldo en la aplicación Nequi',
+      'Cuenta Nequi / Bancaria',
+      'Saldo total a verificar en la app Nequi o bancaria',
     ],
-    [],
-    ['--- 🌟 SECCIÓN 3: TOTAL GENERAL Y CARTERA ---', '', ''],
-    ['CONCEPTO', 'MONTO ($)', 'OBSERVACIONES'],
+    // 🌟 Sección 3: Balance General y Cartera
     [
-      '🌟 TOTAL RECAUDADO DEL NEGOCIO HOY',
+      8,
+      '🌟 Balance Consolidado',
+      '🌟 TOTAL DINERO REAL RECAUDADO HOY',
       totalBusinessRevenue,
-      'Efectivo Físico + Dinero Digital Nequi',
+      'Efectivo Físico + Dinero Digital',
+      'Total de ingresos cobrados efectivamente en el día',
     ],
     [
-      '📝 Ventas a Crédito Hoy (Por Cobrar)',
+      9,
+      '🌟 Balance Consolidado',
+      'Ventas a Crédito Otorgadas Hoy (En la Calle)',
       todayDebtSales,
-      'Mercancía entregada a crédito el día de hoy',
+      'Cartera por Cobrar',
+      'Mercancía despachada a crédito durante la jornada',
     ],
     [
-      '📒 Cartera Total Acumulada por Cobrar',
+      10,
+      '🌟 Balance Consolidado',
+      'Total Cartera Acumulada por Cobrar',
       totalStreetDebt,
-      'Saldo total adeudado por todos los vecinos',
+      'Cartera Histórica',
+      'Saldo total pendiente adeudado por todos los clientes',
     ],
   ];
 
-  if (billsPaidToday.length > 0) {
-    rows.push([]);
-    rows.push(['--- 🚚 DETALLE DE PAGOS A DISTRIBUIDORES / SALIDAS DE HOY ---', '', '']);
-    rows.push(['Proveedor / Concepto', 'Monto Pagado ($)', 'Nota']);
+  // Si hubo salidas o facturas de proveedores pagadas en el día, agregarlas como filas formales
+  if (billsPaidToday && billsPaidToday.length > 0) {
+    let billIndex = 10;
     for (const b of billsPaidToday) {
-      rows.push([b.supplier_name, b.total_amount, b.notes || 'Pagado en efectivo de caja']);
+      billIndex++;
+      rows.push([
+        billIndex,
+        '🚚 Salida a Proveedor',
+        `Pago a Proveedor: ${b.supplier_name}`,
+        -b.total_amount,
+        'Efectivo de Mostrador',
+        b.notes || 'Factura pagada a repartidor',
+      ]);
     }
   }
+
+  const headerRowIndex = 4;
+  const lastDataRow = rows.length;
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
   ws['!cols'] = [
-    { wch: 44 }, // Concepto
-    { wch: 22 }, // Monto
-    { wch: 50 }, // Observaciones
+    { wch: 6 },  // Ítem
+    { wch: 28 }, // Módulo
+    { wch: 48 }, // Concepto
+    { wch: 20 }, // Monto ($)
+    { wch: 28 }, // Medio de Fondo
+    { wch: 54 }, // Observaciones
   ];
 
-  // Formato de moneda para columna B
-  for (let r = 5; r <= rows.length; r++) {
-    const cellRef = `B${r}`;
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }, // Título A1:F1
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }, // Subtítulo A2:F2
+  ];
+
+  ws['!autofilter'] = { ref: `A4:F${lastDataRow}` };
+
+  // Formato de moneda para columna D (Monto)
+  for (let r = headerRowIndex + 1; r <= lastDataRow; r++) {
+    const cellRef = `D${r}`;
     if (ws[cellRef] && typeof ws[cellRef].v === 'number') {
       ws[cellRef].z = CURRENCY_FORMAT;
     }
