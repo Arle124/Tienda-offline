@@ -32,6 +32,25 @@
 
 ## Sesiones Recientes
 
+### 23 de Septiembre de 2026 - Erradicación de Alertas del Sistema y Toasts Flotantes Profesionales
+* **Componente Global de Notificaciones (`Toast.tsx`):**
+  * Creación de `ToastProvider` y hook `useToast()` accesible desde cualquier pantalla.
+  * Diseño flotante superior en pizarra oscura (`#0F172A`) con bordes de color semántico (verde esmeralda para ventas cobradas, ámbar para advertencias, rojo para errores, azul para sincronización).
+  * Animación fluida con resortes (`spring`), desaparición automática en 3 segundos y cierre táctil instantáneo.
+  * Vibración háptica diferenciada (`expo-haptics`) según el tipo de evento (éxito, advertencia, error).
+* **Eliminación Total de `Alert.alert` y `alert()`:**
+  * Reemplazo en `PosScreen`: ventas en efectivo (mostrando el cambio o devuelta), pagos digitales por Nequi/transferencia, créditos guardados en libreta y salidas de caja. Ya no se bloquea la pantalla con cuadros de diálogo grises de Android tras cada venta.
+  * Reemplazo en `OwnerScreen`: actualización de PIN de administración, exportación de reportes Excel y estado de cola de sincronización.
+
+### 23 de Septiembre de 2026 - Habilitación de Entorno Local de Compilación Android (Offline EAS Build)
+* **Entorno de Compilación Local en Fedora:**
+  * Descarga y configuración del Android SDK en `~/Android/Sdk` (`cmdline-tools`, `platform-tools` con `adb`, plataforma `android-36` y `build-tools;36.0.0`).
+  * Aceptación de licencias oficiales de Android e integración con JDK 17 (Eclipse Temurin).
+  * Variables persistentes en `.bashrc`: `ANDROID_HOME`, `JAVA_HOME` y rutas de binarios.
+* **Compilación Local de APK Autónoma y Ultrarrápida:**
+  * Ejecución exitosa de `npx eas-cli build --platform android --profile preview --local` dentro de `apps/mobile`.
+  * Generación del APK (`build-1790194307618.apk`, ~98 MB) en tan solo 5 minutos aprovechando los 12 hilos de la CPU Ryzen, eliminando la dependencia y esperas de cola en la nube de EAS.
+
 ### 23 de Septiembre de 2026 - Terminología Comercial Profesional e Inclusiva
 * **Sustitución de "Fiado" por "Crédito":**
   * Pestaña y vistas actualizadas a `Créditos` y `Libreta de Créditos`.
