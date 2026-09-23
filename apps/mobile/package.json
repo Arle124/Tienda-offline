@@ -9,7 +9,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web --offline",
-    "build:apk": "eas build -p android --profile preview"
+    "build:apk": "npx --yes eas-cli build -p android --profile preview"
   },
   "dependencies": {
     "@babel/runtime": "^8.0.5",
