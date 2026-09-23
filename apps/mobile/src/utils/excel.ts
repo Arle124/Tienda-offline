@@ -151,7 +151,7 @@ export function buildSalesWorksheet(
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   const rows: any[][] = [
-    ['EL CUADERNO DIGITAL - REPORTE DETALLADO DE VENTAS'],
+    ['MI CUADERNO DIGITAL - REPORTE DETALLADO DE VENTAS'],
     [`Generado el: ${dateStr} a las ${timeStr} | Total Registros: ${sales.length} transacciones | Moneda: COP ($)`],
     [],
     [
@@ -401,7 +401,7 @@ export function buildDebtorsWorksheet(customers: LocalCustomer[]): XLSX.WorkShee
   );
 
   const rows: any[][] = [
-    ['EL CUADERNO DIGITAL - LIBRETA DE CREDITOS Y CARTERA'],
+    ['MI CUADERNO DIGITAL - LIBRETA DE CREDITOS Y CARTERA'],
     [`Generado el: ${dateStr} a las ${timeStr} | Total Clientes: ${customers.length} | Moneda: COP ($)`],
     [],
     [
@@ -595,7 +595,7 @@ export function buildInventoryWorksheet(products: LocalProduct[]): XLSX.WorkShee
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   const rows: any[][] = [
-    ['EL CUADERNO DIGITAL - CONTROL DE INVENTARIO Y VALORIZACION'],
+    ['MI CUADERNO DIGITAL - CONTROL DE INVENTARIO Y VALORIZACION'],
     [`Generado el: ${dateStr} a las ${timeStr} | Catalogo: ${products.length} productos | Moneda: COP ($)`],
     [],
     [
@@ -839,7 +839,7 @@ export function buildCashSummaryWorksheet(params: {
     todayTransferPaymentsReceived;
 
   const rows: any[][] = [
-    ['EL CUADERNO DIGITAL - CIERRE DIARIO Y ARQUEO DE CAJA'],
+    ['MI CUADERNO DIGITAL - CIERRE DIARIO Y ARQUEO DE CAJA'],
     [`Fecha de Corte: ${dateStr} - ${timeStr} | Responsable: Administracion | Moneda: COP ($)`],
     [],
     [

@@ -235,7 +235,7 @@ export function DebtorsScreen({
     }
 
     const message =
-      `🛒 *EL CUADERNO DIGITAL - ESTADO DE CUENTA*\n\n` +
+      `🛒 *MI CUADERNO DIGITAL - ESTADO DE CUENTA*\n\n` +
       `Hola *${customerName}*, le compartimos el detalle de su saldo en la tienda:\n\n` +
       `💰 *SALDO TOTAL PENDIENTE: $${debtStr}*\n\n` +
       `📝 *Últimos movimientos:*\n${movementsText}\n\n` +

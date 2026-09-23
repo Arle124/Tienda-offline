@@ -41,6 +41,10 @@
   * Eliminación de términos exclusivos de género como "Dueña" y "Tendera".
   * Nueva nomenclatura operativa: `👤 Mostrador` (rol operativo) y `💼 Administración` (rol de gerencia y cierre).
   * Seguridad renovada: `PIN de Administrador`.
+* **Cambio de Nombre Comercial:**
+  * Transición de "El Cuaderno Digital" a **"Mi Cuaderno Digital"**, aportando un sentido de cercanía, pertenencia e identidad para el comerciante.
+  * Verificación en Google Play Store: nombre disponible y sin colisión con aplicaciones comerciales o de puntos de venta.
+  * Actualización aplicada en `app.json`, cabecera de `App.tsx`, reportes de Excel y mensajes automáticos de WhatsApp.
 * **Rediseño Estructural de Reportes Excel (.xlsx) con Filtros Nativos y Estilos Pasteles:**
   * Eliminación de datos sueltos y textos desalineados en las 4 hojas del sistema (*Ventas*, *Libreta de Créditos*, *Inventario*, *Cierre de Caja*).
   * **Erradicación total de emojis en las hojas de Excel:** Reportes 100% limpios y corporativos, eliminando emoticones decorativos de títulos, encabezados y celdas.

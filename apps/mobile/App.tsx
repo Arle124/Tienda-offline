@@ -130,7 +130,7 @@ export default function App() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.title}>El Cuaderno Digital</Text>
+            <Text style={styles.title}>Mi Cuaderno Digital</Text>
             <Text style={styles.subtitle}>Modo Offline Activo • SQLite Local</Text>
           </View>
 
