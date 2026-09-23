@@ -5,3 +5,5 @@ graphify-out/
 .env
 *.log
 .DS_Store
+*.apk
+*.aab
