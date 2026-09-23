@@ -18,6 +18,7 @@ import {
   saleRepository,
   TodaySalesSummary,
 } from '../../database';
+import { CustomAlert, AlertType } from '../../components/CustomAlert';
 
 interface InventoryScreenProps {
   products: LocalProduct[];
@@ -45,6 +46,53 @@ export function InventoryScreen({
   const [prodMinAlert, setProdMinAlert] = useState('3');
   const [prodIsFav, setProdIsFav] = useState(false);
 
+  // Alerta modal personalizada
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    type?: AlertType;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    showCancel?: boolean;
+    onConfirm: () => void;
+    onCancel?: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
+  const showAlert = (options: {
+    type?: AlertType;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    showCancel?: boolean;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+  }) => {
+    setAlertConfig({
+      visible: true,
+      type: options.type || 'info',
+      title: options.title,
+      message: options.message,
+      confirmText: options.confirmText || 'Aceptar',
+      cancelText: options.cancelText || 'Cancelar',
+      showCancel: Boolean(options.showCancel),
+      onConfirm: () => {
+        setAlertConfig((prev) => ({ ...prev, visible: false }));
+        if (options.onConfirm) options.onConfirm();
+      },
+      onCancel: () => {
+        setAlertConfig((prev) => ({ ...prev, visible: false }));
+        if (options.onCancel) options.onCancel();
+      },
+    });
+  };
+
   const loadDailySummary = useCallback(async () => {
     setLoadingSummary(true);
     try {
@@ -68,9 +116,11 @@ export function InventoryScreen({
       await productRepository.adjustStock(product.id, delta);
       await onRefreshData();
     } catch (err: any) {
-      const msg = `Error ajustando stock: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      showAlert({
+        type: 'danger',
+        title: 'Error de Inventario',
+        message: `No se pudo ajustar el stock: ${err.message}`,
+      });
     }
   };
 
@@ -96,19 +146,53 @@ export function InventoryScreen({
     setProductModalVisible(true);
   };
 
+  const promptDeleteProduct = () => {
+    if (!editingProductId) return;
+    showAlert({
+      type: 'danger',
+      title: '¿Eliminar producto?',
+      message: `¿Estás seguro de que deseas eliminar "${prodName}" del inventario?\n\nYa no aparecerá en el mostrador ni en la lista de productos.`,
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          await productRepository.softDelete(editingProductId);
+          setProductModalVisible(false);
+          await onRefreshData();
+          showAlert({
+            type: 'success',
+            title: 'Producto eliminado',
+            message: `"${prodName}" fue retirado del inventario exitosamente.`,
+          });
+        } catch (err: any) {
+          showAlert({
+            type: 'danger',
+            title: 'Error',
+            message: `No se pudo eliminar el producto: ${err.message}`,
+          });
+        }
+      },
+    });
+  };
+
   const handleSaveProduct = async () => {
     if (!prodName.trim()) {
-      const msg = 'El nombre del producto es obligatorio.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Atención', msg);
+      showAlert({
+        type: 'warning',
+        title: 'Campo obligatorio',
+        message: 'Por favor ingresa el nombre del producto.',
+      });
       return;
     }
 
     const price = parseFloat(prodPrice.replace(/[^0-9]/g, ''));
     if (isNaN(price) || price <= 0) {
-      const msg = 'Ingresa un precio de venta válido.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Atención', msg);
+      showAlert({
+        type: 'warning',
+        title: 'Precio inválido',
+        message: 'Ingresa un precio de venta mayor a $0.',
+      });
       return;
     }
 
@@ -131,15 +215,19 @@ export function InventoryScreen({
       setProductModalVisible(false);
       await onRefreshData();
 
-      const msg = editingProductId
-        ? '✅ Producto actualizado correctamente.'
-        : '✅ Producto creado con éxito.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Listo', msg);
+      showAlert({
+        type: 'success',
+        title: 'Guardado con éxito',
+        message: editingProductId
+          ? `El producto "${prodName}" fue actualizado correctamente.`
+          : `El producto "${prodName}" fue agregado al inventario.`,
+      });
     } catch (err: any) {
-      const msg = `Error guardando producto: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      showAlert({
+        type: 'danger',
+        title: 'Error al guardar',
+        message: `No se pudo guardar el producto: ${err.message}`,
+      });
     }
   };
 
@@ -442,6 +530,19 @@ export function InventoryScreen({
               </Text>
             </TouchableOpacity>
 
+            {/* Botón Eliminar Producto (Solo en modo edición) */}
+            {editingProductId && (
+              <TouchableOpacity
+                style={styles.deleteProdBtn}
+                onPress={promptDeleteProduct}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.deleteProdBtnText}>
+                  🗑️ Eliminar este Producto del Inventario
+                </Text>
+              </TouchableOpacity>
+            )}
+
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={styles.cancelBtn}
@@ -459,6 +560,19 @@ export function InventoryScreen({
           </View>
         </View>
       </Modal>
+
+      {/* Diálogo / Alerta Modal con Estilo Nativo de la App */}
+      <CustomAlert
+        visible={alertConfig.visible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+        showCancel={alertConfig.showCancel}
+        onConfirm={alertConfig.onConfirm}
+        onCancel={alertConfig.onCancel}
+      />
     </View>
   );
 }
@@ -763,10 +877,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#92400E',
   },
+  deleteProdBtn: {
+    paddingVertical: 11,
+    borderRadius: 8,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  deleteProdBtnText: {
+    color: '#DC2626',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
   modalActions: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 16,
+    marginTop: 12,
   },
   cancelBtn: {
     flex: 1,

@@ -19,6 +19,7 @@ import {
   debtRepository,
   CustomerLedgerItem,
 } from '../../database';
+import { CustomAlert, AlertType } from '../../components/CustomAlert';
 
 interface DebtorsScreenProps {
   customers: LocalCustomer[];
@@ -49,6 +50,53 @@ export function DebtorsScreen({
   const [newPhone, setNewPhone] = useState('');
   const [newNotes, setNewNotes] = useState('');
 
+  // Alerta modal personalizada
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    type?: AlertType;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    showCancel?: boolean;
+    onConfirm: () => void;
+    onCancel?: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
+  const showAlert = (options: {
+    type?: AlertType;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    showCancel?: boolean;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+  }) => {
+    setAlertConfig({
+      visible: true,
+      type: options.type || 'info',
+      title: options.title,
+      message: options.message,
+      confirmText: options.confirmText || 'Aceptar',
+      cancelText: options.cancelText || 'Cancelar',
+      showCancel: Boolean(options.showCancel),
+      onConfirm: () => {
+        setAlertConfig((prev) => ({ ...prev, visible: false }));
+        if (options.onConfirm) options.onConfirm();
+      },
+      onCancel: () => {
+        setAlertConfig((prev) => ({ ...prev, visible: false }));
+        if (options.onCancel) options.onCancel();
+      },
+    });
+  };
+
   // Cargar el historial tipo "hoja de cuaderno" cuando se selecciona un cliente
   const loadCustomerLedger = useCallback(async (customerId: string) => {
     setLoadingLedger(true);
@@ -67,14 +115,53 @@ export function DebtorsScreen({
     loadCustomerLedger(customer.id);
   };
 
+  const promptDeleteCustomer = () => {
+    if (!selectedCustomer) return;
+
+    const hasDebt = (selectedCustomer.current_debt || 0) > 0;
+    const debtStr = (selectedCustomer.current_debt || 0).toLocaleString();
+
+    showAlert({
+      type: hasDebt ? 'warning' : 'danger',
+      title: hasDebt ? '⚠️ Vecino con deuda pendiente' : '¿Eliminar vecino?',
+      message: hasDebt
+        ? `"${selectedCustomer.name}" todavía tiene un saldo pendiente de $${debtStr} en la libreta.\n\nSi lo eliminas, su deuda quedará archivada. ¿Seguro que deseas eliminarlo de todas formas?`
+        : `¿Estás seguro de que deseas eliminar a "${selectedCustomer.name}" de la libreta de fiados?`,
+      confirmText: hasDebt ? 'Sí, archivar y eliminar' : 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          const customerName = selectedCustomer.name;
+          await customerRepository.softDelete(selectedCustomer.id);
+          setSelectedCustomer(null);
+          await onRefreshData();
+          showAlert({
+            type: 'success',
+            title: 'Vecino eliminado',
+            message: `"${customerName}" fue retirado de la libreta de fiados.`,
+          });
+        } catch (err: any) {
+          showAlert({
+            type: 'danger',
+            title: 'Error al eliminar',
+            message: `No se pudo eliminar al cliente: ${err.message}`,
+          });
+        }
+      },
+    });
+  };
+
   const handleRecordPayment = async () => {
     if (!selectedCustomer) return;
 
     const amount = parseFloat(paymentAmount.replace(/[^0-9]/g, ''));
     if (isNaN(amount) || amount <= 0) {
-      const msg = 'Ingresa un valor de abono válido mayor a 0.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Atención', msg);
+      showAlert({
+        type: 'warning',
+        title: 'Monto inválido',
+        message: 'Ingresa un valor de abono válido mayor a $0.',
+      });
       return;
     }
 
@@ -88,7 +175,6 @@ export function DebtorsScreen({
       });
 
       const methodTxt = paymentMethod === 'transfer' ? 'por Nequi/Transferencia' : 'en efectivo';
-      const msg = `✅ Abono de $${amount.toLocaleString()} (${methodTxt}) registrado para ${selectedCustomer.name}.`;
       setPaymentAmount('');
       setPaymentNotes('');
       setPaymentMethod('cash');
@@ -101,12 +187,17 @@ export function DebtorsScreen({
       if (updated) setSelectedCustomer(updated);
       await loadCustomerLedger(selectedCustomer.id);
 
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Abono Guardado', msg);
+      showAlert({
+        type: 'success',
+        title: 'Abono Guardado',
+        message: `Se registró un abono de $${amount.toLocaleString()} (${methodTxt}) para ${selectedCustomer.name}.`,
+      });
     } catch (err: any) {
-      const msg = `Error al registrar abono: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      showAlert({
+        type: 'danger',
+        title: 'Error en abono',
+        message: `No se pudo registrar el abono: ${err.message}`,
+      });
     }
   };
 
@@ -169,17 +260,21 @@ export function DebtorsScreen({
         );
       }
     } catch (err: any) {
-      const msg = `No se pudo abrir WhatsApp: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('WhatsApp', msg);
+      showAlert({
+        type: 'danger',
+        title: 'Error de WhatsApp',
+        message: `No se pudo abrir WhatsApp: ${err.message}`,
+      });
     }
   };
 
   const handleCreateCustomer = async () => {
     if (!newName.trim()) {
-      const msg = 'El nombre del vecino es obligatorio.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Atención', msg);
+      showAlert({
+        type: 'warning',
+        title: 'Nombre obligatorio',
+        message: 'Por favor ingresa el nombre del vecino.',
+      });
       return;
     }
 
@@ -200,13 +295,17 @@ export function DebtorsScreen({
 
       await onRefreshData();
 
-      const msg = '✅ Vecino registrado en la libreta con éxito.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Listo', msg);
+      showAlert({
+        type: 'success',
+        title: 'Vecino registrado',
+        message: `"${newName.trim()}" fue agregado a la libreta de fiados.`,
+      });
     } catch (err: any) {
-      const msg = `Error al crear cliente: ${err.message}`;
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Error', msg);
+      showAlert({
+        type: 'danger',
+        title: 'Error al registrar',
+        message: `No se pudo registrar el vecino: ${err.message}`,
+      });
     }
   };
 
@@ -394,6 +493,17 @@ export function DebtorsScreen({
                 >
                   <Text style={styles.shareWhatsAppBtnText}>
                     📲 Enviar Cuenta por WhatsApp
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Botón Eliminar Vecino */}
+                <TouchableOpacity
+                  style={styles.deleteCustomerBtn}
+                  onPress={promptDeleteCustomer}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteCustomerBtnText}>
+                    🗑️ Eliminar este Vecino de la Libreta
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -679,6 +789,19 @@ export function DebtorsScreen({
           </View>
         </View>
       </Modal>
+
+      {/* Alerta Modal Personalizada */}
+      <CustomAlert
+        visible={alertConfig.visible}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+        showCancel={alertConfig.showCancel}
+        onConfirm={alertConfig.onConfirm}
+        onCancel={alertConfig.onCancel}
+      />
     </View>
   );
 }
@@ -973,6 +1096,21 @@ const styles = StyleSheet.create({
   shareWhatsAppBtnText: {
     color: '#FFFFFF',
     fontSize: 15,
+    fontWeight: 'bold',
+  },
+  deleteCustomerBtn: {
+    backgroundColor: '#FEE2E2',
+    width: '100%',
+    paddingVertical: 11,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  deleteCustomerBtnText: {
+    color: '#DC2626',
+    fontSize: 14,
     fontWeight: 'bold',
   },
   ledgerSection: {
