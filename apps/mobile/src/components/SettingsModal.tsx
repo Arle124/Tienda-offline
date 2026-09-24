@@ -181,7 +181,7 @@ export function SettingsModal({
             <View>
               <Text style={styles.headerTitle}>⚙️ Ajustes del Sistema</Text>
               <Text style={styles.headerSubtitle}>
-                Mi Cuaderno Digital • v1.0.1 (Offline Local)
+                Mi Cuaderno Digital • v1.1.0 (Offline Local)
               </Text>
             </View>
             <TouchableOpacity
@@ -445,7 +445,7 @@ export function SettingsModal({
             <View style={styles.infoFooter}>
               <Text style={styles.infoTitle}>Mi Cuaderno Digital</Text>
               <Text style={styles.infoText}>
-                Versión 1.0.1 • Diseñado para el Comercio Latinoamericano
+                Versión 1.1.0 • Diseñado para el Comercio Latinoamericano
               </Text>
               <Text style={styles.infoSubtext}>
                 Almacenamiento Local Offline • Seguridad y Privacidad Garantizada
