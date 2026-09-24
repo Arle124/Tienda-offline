@@ -92,6 +92,11 @@ export class ProductRepository {
     });
   }
 
+  async hardDelete(id: string): Promise<void> {
+    await this.driver.delete('products', id);
+  }
+
+
   async getPendingSync(): Promise<LocalProduct[]> {
     return await this.driver.getAll<LocalProduct>(
       'products',

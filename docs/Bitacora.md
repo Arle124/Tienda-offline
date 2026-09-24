@@ -32,6 +32,18 @@
 
 ## Sesiones Recientes
 
+### 24 de Septiembre de 2026 - Corrección de Persistencia en Eliminación de Clientes y Productos de Ejemplo (Idempotencia de Precarga)
+* **Diagnóstico de Reaparición de Datos de Ejemplo ([index.ts](file:///home/asher/tienda-offline/apps/mobile/src/database/index.ts)):**
+  * Al eliminar los vecinos de ejemplo (*Don Pedro Gómez* y *Doña Martha López*) o los productos iniciales, el borrado lógico (`is_deleted = true`) los ocultaba correctamente de la interfaz en tiempo de ejecución.
+  * Sin embargo, al cerrar y volver a abrir la aplicación, la función `initDatabase()` volvía a ejecutarse y consultaba `customerRepository.getAll()` y `productRepository.getAll()`. Como estos métodos excluyen por defecto los registros borrados, al quedar el listado activo en 0, `initDatabase()` asumía erróneamente que la base de datos estaba recién instalada y volvía a insertar clientes y productos de ejemplo con nuevos UUIDs.
+* **Idempotencia y Bandera de Precarga Única (`initial_seed_completed`):**
+  * Uso de la tabla `sync_meta` para persistir la bandera `'initial_seed_completed'`.
+  * Verificación previa con `getAll(true)`: si ya existen registros en SQLite (incluso borrados), se marca la bandera sin reinsertar nada.
+  * Garantía estricta de que el catálogo y vecinos de ejemplo solo se precargan una única vez en la vida de la base de datos, permitiendo al comerciante eliminar libremente los ejemplos sin que reaparezcan al reiniciar la aplicación.
+* **Integridad Transaccional al Eliminar Clientes ([customer.repository.ts](file:///home/asher/tienda-offline/apps/mobile/src/database/repositories/customer.repository.ts)):**
+  * Al invocar `customerRepository.softDelete(id)`, se archivan atómicamente dentro de la misma transacción todas las deudas activas asociadas en `debt_records`, evitando registros huérfanos.
+  * Inclusión de método `hardDelete` tanto en `customerRepository` como en `productRepository` para operaciones de depuración o purga completa si fuera requerida.
+
 ### 23 de Septiembre de 2026 - Botón de Ajustes (⚙️), Roles y Moneda Internacional Dinámica
 * **Botón Universal de Ajustes en Barra Superior ([App.tsx](file:///home/asher/tienda-offline/apps/mobile/App.tsx)):**
   * Icono de tuerca `⚙️` en la cabecera junto al rol operativo, accesible desde cualquier vista de la aplicación.

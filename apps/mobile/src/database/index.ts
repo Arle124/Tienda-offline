@@ -14,7 +14,7 @@ export * from './repositories/settings.repository';
 
 /**
  * Inicializa la base de datos local (SQLite en móvil, IndexedDB en Web)
- * y precarga datos esenciales si la base de datos está recién instalada.
+ * y precarga datos iniciales una única vez si la base de datos es nueva.
  */
 export async function initDatabase(): Promise<void> {
   const driver = getDatabaseDriver();
@@ -23,35 +23,56 @@ export async function initDatabase(): Promise<void> {
   // Asegurar que exista configuración inicial
   await settingsRepository.getSettings();
 
-  // Precarga de productos frecuentes si el catálogo está vacío
-  const products = await productRepository.getAll();
-  if (products.length === 0) {
-    const defaultProducts = [
-      { name: 'Pan (Unidad)', price: 500, current_stock: 60, is_favorite: true },
-      { name: 'Huevos (Unidad)', price: 800, current_stock: 120, is_favorite: true },
-      { name: 'Leche 1L', price: 4200, current_stock: 24, is_favorite: true },
-      { name: 'Gaseosa 350ml', price: 2500, current_stock: 36, is_favorite: true },
-      { name: 'Arroz 1kg', price: 4000, current_stock: 30, is_favorite: true },
-      { name: 'Aceite 500ml', price: 6500, current_stock: 15, is_favorite: true },
-    ];
-
-    for (const p of defaultProducts) {
-      await productRepository.save(p);
-    }
+  // Verificar si la base de datos ya completó la precarga inicial
+  const isSeeded = await driver.getMeta('initial_seed_completed');
+  if (isSeeded === 'true') {
+    return;
   }
 
-  // Precarga de clientes habituales para créditos si está vacío
-  const customers = await customerRepository.getAll();
-  if (customers.length === 0) {
-    await customerRepository.save({
+  // Si no está marcado como seeded, verificar si ya existen registros previos (incluso eliminados)
+  // para evitar reinsertar datos en instalaciones existentes
+  const [existingProducts, existingCustomers] = await Promise.all([
+    productRepository.getAll(true),
+    customerRepository.getAll(true),
+  ]);
+
+  if (existingProducts.length > 0 || existingCustomers.length > 0) {
+    // Ya existen datos en la base de datos; marcamos como seeded para nunca volver a reinsertar
+    await driver.setMeta('initial_seed_completed', 'true');
+    return;
+  }
+
+  // Base de datos completamente nueva: Precargar catálogo y clientes de ejemplo por única vez
+  const defaultProducts = [
+    { name: 'Pan (Unidad)', price: 500, current_stock: 60, is_favorite: true },
+    { name: 'Huevos (Unidad)', price: 800, current_stock: 120, is_favorite: true },
+    { name: 'Leche 1L', price: 4200, current_stock: 24, is_favorite: true },
+    { name: 'Gaseosa 350ml', price: 2500, current_stock: 36, is_favorite: true },
+    { name: 'Arroz 1kg', price: 4000, current_stock: 30, is_favorite: true },
+    { name: 'Aceite 500ml', price: 6500, current_stock: 15, is_favorite: true },
+  ];
+
+  for (const p of defaultProducts) {
+    await productRepository.save(p);
+  }
+
+  const defaultCustomers = [
+    {
       name: 'Don Pedro Gómez',
       alias: 'El del taller',
       phone: '3001234567',
-    });
-    await customerRepository.save({
+    },
+    {
       name: 'Doña Martha López',
       alias: 'Vecina casa 201',
       phone: '3109876543',
-    });
+    },
+  ];
+
+  for (const c of defaultCustomers) {
+    await customerRepository.save(c);
   }
+
+  await driver.setMeta('initial_seed_completed', 'true');
 }
+

@@ -1,5 +1,5 @@
 import { getDatabaseDriver } from '../connection';
-import type { LocalCustomer } from '../types';
+import type { LocalCustomer, LocalDebtRecord } from '../types';
 import { generateUUID } from '../../utils/uuid';
 
 export class CustomerRepository {
@@ -80,11 +80,31 @@ export class CustomerRepository {
   }
 
   async softDelete(id: string): Promise<void> {
-    await this.driver.update<LocalCustomer>('customers', id, {
-      is_deleted: true,
-      updated_at: new Date().toISOString(),
-      sync_status: 'pending_update',
+    const now = new Date().toISOString();
+    await this.driver.transaction(async () => {
+      await this.driver.update<LocalCustomer>('customers', id, {
+        is_deleted: true,
+        updated_at: now,
+        sync_status: 'pending_update',
+      });
+
+      // Archivar también cualquier deuda activa vinculada al cliente
+      const activeDebts = await this.driver.getAll<LocalDebtRecord>(
+        'debt_records',
+        (d) => d.customer_id === id && !d.is_deleted
+      );
+      for (const debt of activeDebts) {
+        await this.driver.update<LocalDebtRecord>('debt_records', debt.id, {
+          is_deleted: true,
+          updated_at: now,
+          sync_status: 'pending_update',
+        });
+      }
     });
+  }
+
+  async hardDelete(id: string): Promise<void> {
+    await this.driver.delete('customers', id);
   }
 
   async getPendingSync(): Promise<LocalCustomer[]> {
