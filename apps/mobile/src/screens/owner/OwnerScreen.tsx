@@ -32,6 +32,7 @@ interface OwnerScreenProps {
   role: UserRole;
   customers: LocalCustomer[];
   products: LocalProduct[];
+  pendingBills?: LocalSupplierBill[];
   pendingCount: number;
   onRoleChange: (newRole: UserRole) => void;
   onRefreshData: () => Promise<void>;
@@ -41,6 +42,7 @@ export function OwnerScreen({
   role,
   customers,
   products,
+  pendingBills = [],
   pendingCount,
   onRoleChange,
   onRefreshData,
@@ -52,7 +54,14 @@ export function OwnerScreen({
   const [todaySummary, setTodaySummary] = useState<TodaySalesSummary | null>(null);
   const [todayOutflows, setTodayOutflows] = useState<number>(0);
   const [billsPaidToday, setBillsPaidToday] = useState<LocalSupplierBill[]>([]);
+  const [pendingSupplierBills, setPendingSupplierBills] = useState<LocalSupplierBill[]>(pendingBills);
   const [isExporting, setIsExporting] = useState(false);
+
+  // Modal para crear nueva factura a proveedor
+  const [newBillModalVisible, setNewBillModalVisible] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState('');
+  const [newBillAmount, setNewBillAmount] = useState('');
+  const [newBillNotes, setNewBillNotes] = useState('');
 
   // Cuadre / Arqueo de caja
   const [countedCash, setCountedCash] = useState('');
@@ -70,6 +79,8 @@ export function OwnerScreen({
       const outflows = await supplierRepository.getTodayPaidOutflows();
       setTodayOutflows(outflows.totalPaidToday);
       setBillsPaidToday(outflows.billsPaidToday);
+      const pending = await supplierRepository.getPendingBills();
+      setPendingSupplierBills(pending);
     } catch (err) {
       console.error('Error cargando resumen de finanzas:', err);
     }
@@ -80,6 +91,82 @@ export function OwnerScreen({
       loadSummary();
     }
   }, [role, loadSummary]);
+
+  const handlePaySupplierBill = async (bill: LocalSupplierBill) => {
+    try {
+      await supplierRepository.markAsPaid(bill.id);
+      showToast({
+        type: 'success',
+        title: 'Factura Pagada',
+        message: `Se pagó ${formatMoney(bill.total_amount)} a ${bill.supplier_name} con efectivo de caja.`,
+      });
+      await onRefreshData();
+      await loadSummary();
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Error al pagar',
+        message: err.message,
+      });
+    }
+  };
+
+  const handleDeleteSupplierBill = async (billId: string) => {
+    try {
+      await supplierRepository.softDelete(billId);
+      showToast({
+        type: 'info',
+        title: 'Factura eliminada',
+        message: 'La cuenta por pagar fue eliminada.',
+      });
+      await onRefreshData();
+      await loadSummary();
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Error al eliminar',
+        message: err.message,
+      });
+    }
+  };
+
+  const handleCreateSupplierBill = async () => {
+    const amount = parseFloat(newBillAmount.replace(/[^0-9]/g, ''));
+    if (isNaN(amount) || amount <= 0 || !newSupplierName.trim()) {
+      showToast({
+        type: 'warning',
+        title: 'Datos incompletos',
+        message: 'Ingresa proveedor y monto válido mayor a $0.',
+      });
+      return;
+    }
+    try {
+      await supplierRepository.createBill({
+        supplierName: newSupplierName.trim(),
+        totalAmount: amount,
+        isPaid: false,
+        notes: newBillNotes.trim() || 'Factura pendiente de pago',
+        createdBy: role,
+      });
+      setNewSupplierName('');
+      setNewBillAmount('');
+      setNewBillNotes('');
+      setNewBillModalVisible(false);
+      showToast({
+        type: 'success',
+        title: 'Factura Registrada',
+        message: `Cuenta por pagar de ${formatMoney(amount)} guardada.`,
+      });
+      await onRefreshData();
+      await loadSummary();
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Error al crear factura',
+        message: err.message,
+      });
+    }
+  };
 
   const handleUnlock = async () => {
     setPinError('');
@@ -220,6 +307,11 @@ export function OwnerScreen({
     0
   );
 
+  const totalPendingSupplierDebt = pendingSupplierBills.reduce(
+    (sum, b) => sum + (b.total_amount || 0),
+    0
+  );
+
   const theoreticalCashInDrawer = todaySummary
     ? todaySummary.totalPhysicalCashInDrawer - todayOutflows
     : 0;
@@ -348,6 +440,23 @@ export function OwnerScreen({
           </View>
         </View>
 
+        {/* Cuentas por Pagar a Proveedores (Pendientes) */}
+        <View style={[styles.kpiCardMini, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA', borderWidth: 1, marginTop: 10, width: '100%' }]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View>
+              <Text style={[styles.kpiMiniLabel, { color: '#9A3412', fontWeight: 'bold' }]}>
+                🚚 Cuentas por Pagar a Proveedores
+              </Text>
+              <Text style={{ fontSize: 11, color: '#C2410C', marginTop: 2 }}>
+                {pendingSupplierBills.length === 1 ? '1 factura pendiente' : `${pendingSupplierBills.length} facturas pendientes`}
+              </Text>
+            </View>
+            <Text style={[styles.kpiMiniValue, { color: '#EA580C' }]}>
+              {formatMoney(totalPendingSupplierDebt)}
+            </Text>
+          </View>
+        </View>
+
         {/* Detalle de Salidas / Proveedores de Hoy */}
         {todayOutflows > 0 && (
           <View style={[styles.kpiCardMini, { backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1, marginTop: 10, width: '100%' }]}>
@@ -404,6 +513,58 @@ export function OwnerScreen({
               {formatMoney(countedNum)}
             </Text>
           </View>
+        )}
+      </View>
+
+      {/* Cuentas por Pagar a Proveedores */}
+      <View style={styles.sectionBox}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <View style={{ flex: 1, marginRight: 8 }}>
+            <Text style={styles.sectionTitle}>🚚 Cuentas por Pagar a Proveedores</Text>
+            <Text style={styles.sectionSubtitle}>
+              Facturas pendientes de repartidores y distribuidores.
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.addBillBtn}
+            onPress={() => setNewBillModalVisible(true)}
+          >
+            <Text style={styles.addBillBtnText}>+ Factura</Text>
+          </TouchableOpacity>
+        </View>
+
+        {pendingSupplierBills.length === 0 ? (
+          <View style={styles.emptyBillsState}>
+            <Text style={styles.emptyBillsIcon}>🎉</Text>
+            <Text style={styles.emptyBillsTitle}>Al día con proveedores</Text>
+            <Text style={styles.emptyBillsSub}>No tienes facturas pendientes de pago registradas.</Text>
+          </View>
+        ) : (
+          pendingSupplierBills.map((bill) => (
+            <View key={bill.id} style={styles.ownerBillCard}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.ownerBillSupplier}>{bill.supplier_name}</Text>
+                <Text style={styles.ownerBillAmount}>{formatMoney(bill.total_amount)}</Text>
+                <Text style={styles.ownerBillDate}>
+                  📅 {new Date(bill.created_at).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' })} • {bill.notes || 'Factura pendiente'}
+                </Text>
+              </View>
+              <View style={styles.ownerBillActions}>
+                <TouchableOpacity
+                  style={styles.ownerPayBillBtn}
+                  onPress={() => handlePaySupplierBill(bill)}
+                >
+                  <Text style={styles.ownerPayBillText}>💵 Pagar de Caja</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.ownerDeleteBillBtn}
+                  onPress={() => handleDeleteSupplierBill(bill.id)}
+                >
+                  <Text style={styles.ownerDeleteBillText}>🗑️</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
         )}
       </View>
 
@@ -577,6 +738,64 @@ export function OwnerScreen({
                 onPress={handleChangePin}
               >
                 <Text style={styles.savePinBtnText}>Guardar PIN</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL: Nueva Cuenta por Pagar / Factura a Proveedor */}
+      <Modal visible={newBillModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>🚚 Nueva Cuenta por Pagar</Text>
+            <Text style={styles.modalSubtitle}>
+              Registra una factura de repartidor o compra a crédito de la tienda.
+            </Text>
+
+            <Text style={styles.fieldLabel}>Proveedor o Empresa *</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej: Bimbo, Coca-Cola, Postobón, Bolsas..."
+              value={newSupplierName}
+              onChangeText={setNewSupplierName}
+              autoFocus
+            />
+
+            <Text style={styles.fieldLabel}>Monto de la Factura *</Text>
+            <TextInput
+              style={styles.priceBigInput}
+              keyboardType="numeric"
+              placeholder="$ 0"
+              value={newBillAmount}
+              onChangeText={setNewBillAmount}
+            />
+
+            <Text style={styles.fieldLabel}>Nota / Referencia (opcional)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej: Factura #1234, pagar en 8 días..."
+              value={newBillNotes}
+              onChangeText={setNewBillNotes}
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => {
+                  setNewBillModalVisible(false);
+                  setNewSupplierName('');
+                  setNewBillAmount('');
+                  setNewBillNotes('');
+                }}
+              >
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.savePinBtn}
+                onPress={handleCreateSupplierBill}
+              >
+                <Text style={styles.savePinBtnText}>Guardar Factura</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -857,7 +1076,24 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: 'bold',
     color: '#0F172A',
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
     marginBottom: 12,
+  },
+  priceBigInput: {
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#EA580C',
+    textAlign: 'center',
+    backgroundColor: '#F8FAFC',
+    marginBottom: 8,
   },
   inputLabel: {
     fontSize: 12,
@@ -926,5 +1162,92 @@ const styles = StyleSheet.create({
   reportBtnIcon: {
     fontSize: 22,
     marginLeft: 10,
+  },
+  addBillBtn: {
+    backgroundColor: '#EA580C',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  addBillBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  emptyBillsState: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    marginVertical: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  emptyBillsIcon: {
+    fontSize: 32,
+    marginBottom: 6,
+  },
+  emptyBillsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#15803D',
+  },
+  emptyBillsSub: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  ownerBillCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  ownerBillSupplier: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#9A3412',
+  },
+  ownerBillAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#EA580C',
+    marginTop: 2,
+  },
+  ownerBillDate: {
+    fontSize: 11,
+    color: '#7C2D12',
+    marginTop: 2,
+  },
+  ownerBillActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 8,
+  },
+  ownerPayBillBtn: {
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  ownerPayBillText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  ownerDeleteBillBtn: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#FEE2E2',
+  },
+  ownerDeleteBillText: {
+    fontSize: 15,
   },
 });

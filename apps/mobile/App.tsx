@@ -19,6 +19,7 @@ import {
   settingsRepository,
   LocalProduct,
   LocalCustomer,
+  LocalSupplierBill,
   UserRole,
 } from './src/database';
 import { PosScreen } from './src/screens/pos/PosScreen';
@@ -38,6 +39,7 @@ export default function App() {
 
   const [products, setProducts] = useState<LocalProduct[]>([]);
   const [customers, setCustomers] = useState<LocalCustomer[]>([]);
+  const [pendingBills, setPendingBills] = useState<LocalSupplierBill[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
 
   // Modal de PIN para Administración desde la barra superior
@@ -53,6 +55,7 @@ export default function App() {
       const [
         allProds,
         allCusts,
+        unpaidBills,
         pendingSales,
         pendingProds,
         pendingCusts,
@@ -61,6 +64,7 @@ export default function App() {
       ] = await Promise.all([
         productRepository.getAll(),
         customerRepository.getAll(),
+        supplierRepository.getPendingBills(),
         saleRepository.getPendingSync(),
         productRepository.getPendingSync(),
         customerRepository.getPendingSync(),
@@ -70,6 +74,7 @@ export default function App() {
 
       setProducts(allProds);
       setCustomers(allCusts);
+      setPendingBills(unpaidBills);
       setPendingCount(
         pendingSales.sales.length +
           pendingSales.items.length +
@@ -137,9 +142,13 @@ export default function App() {
             {/* Cabecera Superior */}
             <View style={styles.header}>
               <View style={styles.headerTop}>
-                <View>
-                  <Text style={styles.title}>Mi Cuaderno Digital</Text>
-                  <Text style={styles.subtitle}>Modo Offline Activo • SQLite Local</Text>
+                <View style={styles.titleContainer}>
+                  <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+                    Mi Cuaderno Digital
+                  </Text>
+                  <Text style={styles.subtitle} numberOfLines={1}>
+                    Modo Offline Activo • SQLite Local
+                  </Text>
                 </View>
 
                 <View style={styles.headerRight}>
@@ -156,7 +165,7 @@ export default function App() {
                       style={styles.duenaBadge}
                       onPress={() => setRole('tendera')}
                     >
-                      <Text style={styles.badgeText}>💼 Administración</Text>
+                      <Text style={styles.badgeText}>💼 Admin</Text>
                       <Text style={styles.badgeSubtext}>Salir</Text>
                     </TouchableOpacity>
                   )}
@@ -186,6 +195,7 @@ export default function App() {
           <PosScreen
             products={products}
             customers={customers}
+            pendingBills={pendingBills}
             role={role}
             onSaleCompleted={loadData}
             onGoToDebtors={() => setActiveTab('debtors')}
@@ -195,6 +205,7 @@ export default function App() {
         {activeTab === 'debtors' && (
           <DebtorsScreen
             customers={customers}
+            pendingBills={pendingBills}
             role={role}
             onRefreshData={loadData}
           />
@@ -213,6 +224,7 @@ export default function App() {
             role={role}
             customers={customers}
             products={products}
+            pendingBills={pendingBills}
             pendingCount={pendingCount}
             onRoleChange={setRole}
             onRefreshData={loadData}
@@ -243,9 +255,11 @@ export default function App() {
         >
           <View style={{ position: 'relative' }}>
             <Text style={styles.tabIcon}>📒</Text>
-            {debtorsWithBalance > 0 && (
+            {(debtorsWithBalance > 0 || pendingBills.length > 0) && (
               <View style={styles.tabBadge}>
-                <Text style={styles.tabBadgeText}>{debtorsWithBalance}</Text>
+                <Text style={styles.tabBadgeText}>
+                  {debtorsWithBalance + pendingBills.length}
+                </Text>
               </View>
             )}
           </View>
@@ -396,26 +410,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
+  },
+  titleContainer: {
+    flex: 1,
+    marginRight: 6,
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
   subtitle: {
     fontSize: 11,
     color: '#94A3B8',
-    marginTop: 2,
+    marginTop: 1,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    flexShrink: 0,
+    gap: 6,
   },
   settingsButton: {
     backgroundColor: '#1E293B',
-    paddingHorizontal: 9,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#334155',
@@ -423,11 +445,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   settingsIcon: {
-    fontSize: 16,
+    fontSize: 15,
   },
   tenderaBadge: {
     backgroundColor: '#1E293B',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
@@ -436,7 +458,7 @@ const styles = StyleSheet.create({
   },
   duenaBadge: {
     backgroundColor: '#7C2D12',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,

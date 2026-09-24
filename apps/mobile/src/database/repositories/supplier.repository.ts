@@ -30,8 +30,8 @@ export class SupplierRepository {
       'supplier_bills',
       (b) => !b.is_deleted && !b.is_paid
     );
-    return bills.sort((a, b) =>
-      (a.due_date || '').localeCompare(b.due_date || '')
+    return bills.sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }
 
@@ -63,6 +63,20 @@ export class SupplierRepository {
       sync_status: 'pending_update',
     });
   }
+
+  async softDelete(id: string): Promise<void> {
+    const now = new Date().toISOString();
+    await this.driver.update<LocalSupplierBill>('supplier_bills', id, {
+      is_deleted: true,
+      updated_at: now,
+      sync_status: 'pending_update',
+    });
+  }
+
+  async hardDelete(id: string): Promise<void> {
+    await this.driver.delete('supplier_bills', id);
+  }
+
 
   async getTodayPaidOutflows(): Promise<{
     totalPaidToday: number;

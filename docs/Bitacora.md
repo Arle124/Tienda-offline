@@ -32,6 +32,30 @@
 
 ## Sesiones Recientes
 
+### 24 de Septiembre de 2026 - Versión 1.2.0 (versionCode 4): Cuentas por Pagar a Proveedores y Ajuste de Cabecera Móvil
+* **Ajuste y Corrección de Solapamiento en Cabecera Móvil ([App.tsx](file:///home/asher/tienda-offline/apps/mobile/App.tsx)):**
+  * El contenedor del título `"Mi Cuaderno Digital"` y subtítulo ahora tiene `flex: 1` con margen derecho controlado y truncado por elipsis (`numberOfLines={1}`).
+  * El botón de rol de administración se optimizó visualmente como `"💼 Admin"` con `flexShrink: 0`, garantizando que en teléfonos con pantallas compactas el título nunca se solape con el botón de rol o el engranaje de configuración `⚙️`.
+* **Módulo Completo de Cuentas por Pagar a Proveedores (`supplier_bills`):**
+  * **Problema Resuelto:** Al registrar compras a crédito con repartidores ("Quedar debiendo" / `is_paid = false`) desde el botón `💸 Salida` de Mostrador, las facturas quedaban guardadas en SQLite pero no se reflejaban en ninguna interfaz de la aplicación.
+  * **Mostrador ([PosScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/pos/PosScreen.tsx)):**
+    * Badge numérico en el botón `💸 Salida` que indica cuántas facturas a crédito están pendientes de pago.
+    * Modal de salida con dos pestañas: `➕ Nueva Salida` y `📋 Por Pagar (N)`.
+    * Acción de pago directo con efectivo de caja (`💵 Pagar Caja`) con confirmación, actualización inmediata y alerta toast reactiva, además de opción de borrado (`🗑️`).
+  * **Libreta de Créditos ([DebtorsScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/debtors/DebtorsScreen.tsx)):**
+    * Selector de segmento superior: `📒 Vecinos (N)` y `🚚 Proveedores (N)`.
+    * En la vista de proveedores: tarjeta de total adeudado a proveedores, buscador por nombre de empresa o notas, tarjetas individuales con fecha y monto, botones de pago con caja y eliminación, y modal `+ Factura` para registrar nuevas deudas comerciales con repartidores.
+  * **Administración y Cierre ([OwnerScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/owner/OwnerScreen.tsx)):**
+    * Tarjeta KPI destacada de cuentas por pagar a proveedores.
+    * Sección dedicada con listado de facturas, liquidación directa contra caja y botón de registro de facturas pendientes.
+  * **Repositorio de Proveedores ([supplier.repository.ts](file:///home/asher/tienda-offline/apps/mobile/src/database/repositories/supplier.repository.ts)):**
+    * Implementación de `softDelete` y `hardDelete`.
+    * Ordenamiento descendente en `getPendingBills()`.
+    * Al liquidarse con `markAsPaid()`, la factura se contabiliza de forma automática en el arqueo diario de caja en `supplierRepository.getTodayPaidOutflows()`.
+* **Incremento de Versión de la Aplicación:**
+  * `apps/mobile/app.json`: `version: "1.2.0"`, `versionCode: 4`.
+  * `apps/mobile/package.json`: `version: "1.2.0"`.
+
 ### 24 de Septiembre de 2026 - Corrección de Persistencia en Eliminación de Clientes y Productos de Ejemplo (Idempotencia de Precarga)
 * **Diagnóstico de Reaparición de Datos de Ejemplo ([index.ts](file:///home/asher/tienda-offline/apps/mobile/src/database/index.ts)):**
   * Al eliminar los vecinos de ejemplo (*Don Pedro Gómez* y *Doña Martha López*) o los productos iniciales, el borrado lógico (`is_deleted = true`) los ocultaba correctamente de la interfaz en tiempo de ejecución.

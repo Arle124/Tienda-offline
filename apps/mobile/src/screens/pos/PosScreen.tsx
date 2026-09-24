@@ -12,6 +12,7 @@ import {
 import {
   LocalProduct,
   LocalCustomer,
+  LocalSupplierBill,
   UserRole,
   saleRepository,
   customerRepository,
@@ -23,6 +24,7 @@ import { useSettings } from '../../context/SettingsContext';
 interface PosScreenProps {
   products: LocalProduct[];
   customers: LocalCustomer[];
+  pendingBills?: LocalSupplierBill[];
   role: UserRole;
   onSaleCompleted: () => Promise<void>;
   onGoToDebtors?: () => void;
@@ -31,6 +33,7 @@ interface PosScreenProps {
 export function PosScreen({
   products,
   customers,
+  pendingBills = [],
   role,
   onSaleCompleted,
   onGoToDebtors,
@@ -57,6 +60,7 @@ export function PosScreen({
 
   // Modal para registrar salida de dinero / pago proveedor
   const [outflowModalVisible, setOutflowModalVisible] = useState(false);
+  const [outflowModalTab, setOutflowModalTab] = useState<'create' | 'pending'>('create');
   const [outflowAmount, setOutflowAmount] = useState('');
   const [outflowConcept, setOutflowConcept] = useState('');
   const [outflowFromDrawer, setOutflowFromDrawer] = useState(true);
@@ -180,13 +184,54 @@ export function PosScreen({
 
       showToast({
         type: 'success',
-        title: 'Salida Registrada',
-        message: `Monto: ${formatMoney(amount)} • ${outflowConcept.trim()}`,
+        title: outflowFromDrawer ? 'Salida Registrada' : 'Cuenta por Pagar Registrada',
+        message: outflowFromDrawer
+          ? `Monto: ${formatMoney(amount)} • ${outflowConcept.trim()} (Caja)`
+          : `Quedó pendiente por pagar: ${formatMoney(amount)} a ${outflowConcept.trim()}`,
       });
     } catch (err: any) {
       showToast({
         type: 'error',
         title: 'Error al registrar salida',
+        message: err.message,
+      });
+    }
+  };
+
+  const handlePayPendingBill = async (bill: LocalSupplierBill) => {
+    try {
+      await supplierRepository.markAsPaid(bill.id);
+      showToast({
+        type: 'success',
+        title: 'Factura Pagada',
+        message: `Se pagó ${formatMoney(bill.total_amount)} a ${bill.supplier_name} con efectivo de caja.`,
+      });
+      await onSaleCompleted();
+      if (pendingBills.length <= 1) {
+        setOutflowModalVisible(false);
+      }
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Error al pagar',
+        message: err.message,
+      });
+    }
+  };
+
+  const handleDeletePendingBill = async (billId: string) => {
+    try {
+      await supplierRepository.softDelete(billId);
+      showToast({
+        type: 'info',
+        title: 'Factura eliminada',
+        message: 'La cuenta por pagar fue retirada.',
+      });
+      await onSaleCompleted();
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Error al eliminar',
         message: err.message,
       });
     }
@@ -379,9 +424,19 @@ export function PosScreen({
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.outflowButton}
-          onPress={() => setOutflowModalVisible(true)}
+          onPress={() => {
+            setOutflowModalTab(pendingBills.length > 0 ? 'pending' : 'create');
+            setOutflowModalVisible(true);
+          }}
         >
-          <Text style={styles.outflowButtonText}>💸 Salida</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={styles.outflowButtonText}>💸 Salida</Text>
+            {pendingBills.length > 0 && (
+              <View style={styles.outflowBadge}>
+                <Text style={styles.outflowBadgeText}>{pendingBills.length}</Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -702,78 +757,180 @@ export function PosScreen({
       <Modal visible={outflowModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>💸 Registrar Salida de Dinero</Text>
-            <Text style={styles.modalDesc}>
-              Registra pagos a proveedores (Bimbo, Postobón, etc.) o gastos para que el arqueo de caja cuadre exacto.
-            </Text>
-
-            <Text style={styles.inputLabel}>¿Cuánto dinero salió? *</Text>
-            <TextInput
-              style={styles.priceBigInput}
-              keyboardType="numeric"
-              placeholder="$ 0"
-              value={outflowAmount}
-              onChangeText={setOutflowAmount}
-              autoFocus
-            />
-
-            <Text style={styles.inputLabel}>Proveedor o Concepto *</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ej: Bimbo, Coca-Cola, Bolsas, Domicilio..."
-              value={outflowConcept}
-              onChangeText={setOutflowConcept}
-            />
-
-            <View style={styles.outflowSourceRow}>
+            <View style={styles.modalTabsRow}>
               <TouchableOpacity
                 style={[
-                  styles.outflowSourceOption,
-                  outflowFromDrawer && styles.outflowSourceActive,
+                  styles.modalTabBtn,
+                  outflowModalTab === 'create' && styles.modalTabBtnActive,
                 ]}
-                onPress={() => setOutflowFromDrawer(true)}
+                onPress={() => setOutflowModalTab('create')}
               >
                 <Text
                   style={[
-                    styles.outflowSourceText,
-                    outflowFromDrawer && styles.outflowSourceTextActive,
+                    styles.modalTabBtnText,
+                    outflowModalTab === 'create' && styles.modalTabBtnTextActive,
                   ]}
                 >
-                  💵 Salió de la Caja
+                  ➕ Nueva Salida
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
-                  styles.outflowSourceOption,
-                  !outflowFromDrawer && styles.outflowSourceActive,
+                  styles.modalTabBtn,
+                  outflowModalTab === 'pending' && styles.modalTabBtnActive,
                 ]}
-                onPress={() => setOutflowFromDrawer(false)}
+                onPress={() => setOutflowModalTab('pending')}
               >
                 <Text
                   style={[
-                    styles.outflowSourceText,
-                    !outflowFromDrawer && styles.outflowSourceTextActive,
+                    styles.modalTabBtnText,
+                    outflowModalTab === 'pending' && styles.modalTabBtnTextActive,
                   ]}
                 >
-                  ⏳ Pendiente por Pagar
+                  📋 Por Pagar ({pendingBills.length})
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setOutflowModalVisible(false)}
-              >
-                <Text style={styles.modalCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalConfirmBtn, { backgroundColor: '#DC2626' }]}
-                onPress={handleSaveOutflow}
-              >
-                <Text style={styles.modalConfirmText}>Registrar Salida</Text>
-              </TouchableOpacity>
-            </View>
+            {outflowModalTab === 'create' ? (
+              <>
+                <Text style={styles.modalTitle}>💸 Registrar Salida de Dinero</Text>
+                <Text style={styles.modalDesc}>
+                  Registra pagos a proveedores (Bimbo, Postobón, etc.) o gastos para que el arqueo de caja cuadre exacto.
+                </Text>
+
+                <Text style={styles.inputLabel}>¿Cuánto dinero salió? *</Text>
+                <TextInput
+                  style={styles.priceBigInput}
+                  keyboardType="numeric"
+                  placeholder="$ 0"
+                  value={outflowAmount}
+                  onChangeText={setOutflowAmount}
+                  autoFocus
+                />
+
+                <Text style={styles.inputLabel}>Proveedor o Concepto *</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Ej: Bimbo, Coca-Cola, Bolsas, Domicilio..."
+                  value={outflowConcept}
+                  onChangeText={setOutflowConcept}
+                />
+
+                <View style={styles.outflowSourceRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.outflowSourceOption,
+                      outflowFromDrawer && styles.outflowSourceActive,
+                    ]}
+                    onPress={() => setOutflowFromDrawer(true)}
+                  >
+                    <Text
+                      style={[
+                        styles.outflowSourceText,
+                        outflowFromDrawer && styles.outflowSourceTextActive,
+                      ]}
+                    >
+                      💵 Salió de la Caja
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.outflowSourceOption,
+                      !outflowFromDrawer && styles.outflowSourceActive,
+                    ]}
+                    onPress={() => setOutflowFromDrawer(false)}
+                  >
+                    <Text
+                      style={[
+                        styles.outflowSourceText,
+                        !outflowFromDrawer && styles.outflowSourceTextActive,
+                      ]}
+                    >
+                      ⏳ Pendiente por Pagar
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={styles.modalCancelBtn}
+                    onPress={() => setOutflowModalVisible(false)}
+                  >
+                    <Text style={styles.modalCancelText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.modalConfirmBtn,
+                      { backgroundColor: outflowFromDrawer ? '#DC2626' : '#EA580C' },
+                    ]}
+                    onPress={handleSaveOutflow}
+                  >
+                    <Text style={styles.modalConfirmText}>
+                      {outflowFromDrawer ? 'Registrar Salida' : 'Guardar por Pagar'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalTitle}>📋 Facturas Pendientes de Pago</Text>
+                <Text style={styles.modalDesc}>
+                  Cuentas por pagar a repartidores. Al pagarlas, se descontarán automáticamente del arqueo de caja de hoy.
+                </Text>
+
+                {pendingBills.length === 0 ? (
+                  <View style={styles.emptyBillsBox}>
+                    <Text style={styles.emptyBillsText}>
+                      No tienes facturas pendientes por pagar a repartidores ✅
+                    </Text>
+                  </View>
+                ) : (
+                  <ScrollView style={{ maxHeight: 260, marginVertical: 8 }}>
+                    {pendingBills.map((b) => (
+                      <View key={b.id} style={styles.billCard}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.billSupplierName}>{b.supplier_name}</Text>
+                          <Text style={styles.billAmount}>{formatMoney(b.total_amount)}</Text>
+                          <Text style={styles.billDate}>
+                            📅 {new Date(b.created_at).toLocaleDateString([], { day: '2-digit', month: '2-digit' })} • {b.notes || 'Factura pendiente'}
+                          </Text>
+                        </View>
+                        <View style={styles.billActions}>
+                          <TouchableOpacity
+                            style={styles.billPayBtn}
+                            onPress={() => handlePayPendingBill(b)}
+                          >
+                            <Text style={styles.billPayBtnText}>💵 Pagar Caja</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.billDeleteBtn}
+                            onPress={() => handleDeletePendingBill(b.id)}
+                          >
+                            <Text style={styles.billDeleteBtnText}>🗑️</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </ScrollView>
+                )}
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={styles.modalCancelBtn}
+                    onPress={() => setOutflowModalVisible(false)}
+                  >
+                    <Text style={styles.modalCancelText}>Cerrar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalConfirmBtn, { backgroundColor: '#EA580C' }]}
+                    onPress={() => setOutflowModalTab('create')}
+                  >
+                    <Text style={styles.modalConfirmText}>+ Nueva Salida</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -1287,5 +1444,115 @@ const styles = StyleSheet.create({
   modalConfirmText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+  },
+  outflowBadge: {
+    backgroundColor: '#DC2626',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  outflowBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  modalTabsRow: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: 14,
+  },
+  modalTabBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  modalTabBtnActive: {
+    backgroundColor: '#FFFFFF',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  modalTabBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  modalTabBtnTextActive: {
+    color: '#0F172A',
+    fontWeight: 'bold',
+  },
+  emptyBillsBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  emptyBillsText: {
+    color: '#64748B',
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  billCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 8,
+  },
+  billSupplierName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#991B1B',
+  },
+  billAmount: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#DC2626',
+    marginTop: 2,
+  },
+  billDate: {
+    fontSize: 10,
+    color: '#7F1D1D',
+    marginTop: 2,
+  },
+  billActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginLeft: 8,
+  },
+  billPayBtn: {
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  billPayBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  billDeleteBtn: {
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: '#FEE2E2',
+  },
+  billDeleteBtnText: {
+    fontSize: 14,
   },
 });

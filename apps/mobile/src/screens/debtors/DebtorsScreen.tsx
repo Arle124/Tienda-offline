@@ -14,9 +14,11 @@ import {
 } from 'react-native';
 import {
   LocalCustomer,
+  LocalSupplierBill,
   UserRole,
   customerRepository,
   debtRepository,
+  supplierRepository,
   CustomerLedgerItem,
 } from '../../database';
 import { CustomAlert, AlertType } from '../../components/CustomAlert';
@@ -24,20 +26,29 @@ import { useSettings } from '../../context/SettingsContext';
 
 interface DebtorsScreenProps {
   customers: LocalCustomer[];
+  pendingBills?: LocalSupplierBill[];
   role: UserRole;
   onRefreshData: () => Promise<void>;
 }
 
 export function DebtorsScreen({
   customers,
+  pendingBills = [],
   role,
   onRefreshData,
 }: DebtorsScreenProps) {
   const { formatMoney, storeName } = useSettings();
+  const [activeSection, setActiveSection] = useState<'customers' | 'suppliers'>('customers');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<LocalCustomer | null>(null);
   const [ledgerItems, setLedgerItems] = useState<CustomerLedgerItem[]>([]);
   const [loadingLedger, setLoadingLedger] = useState(false);
+
+  // Modal para registrar nueva factura de proveedor
+  const [newBillModalVisible, setNewBillModalVisible] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState('');
+  const [newBillAmount, setNewBillAmount] = useState('');
+  const [newBillNotes, setNewBillNotes] = useState('');
 
   // Modal para registrar abono
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
@@ -312,6 +323,100 @@ export function DebtorsScreen({
     }
   };
 
+  const handlePaySupplierBill = async (bill: LocalSupplierBill) => {
+    showAlert({
+      type: 'info',
+      title: 'Pagar con efectivo de caja',
+      message: `¿Confirmas el pago de ${formatMoney(bill.total_amount)} a "${bill.supplier_name}" con dinero de la caja registradora?`,
+      confirmText: 'Sí, pagar de caja',
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          await supplierRepository.markAsPaid(bill.id);
+          await onRefreshData();
+          showAlert({
+            type: 'success',
+            title: 'Factura pagada',
+            message: `Se registró la salida de caja de ${formatMoney(bill.total_amount)} para ${bill.supplier_name}.`,
+          });
+        } catch (err: any) {
+          showAlert({
+            type: 'danger',
+            title: 'Error al pagar',
+            message: err.message,
+          });
+        }
+      },
+    });
+  };
+
+  const handleDeleteSupplierBill = async (bill: LocalSupplierBill) => {
+    showAlert({
+      type: 'warning',
+      title: '¿Eliminar factura?',
+      message: `¿Deseas retirar la cuenta por pagar de ${formatMoney(bill.total_amount)} a "${bill.supplier_name}"?`,
+      confirmText: 'Sí, eliminar',
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          await supplierRepository.softDelete(bill.id);
+          await onRefreshData();
+          showAlert({
+            type: 'success',
+            title: 'Factura eliminada',
+            message: 'La cuenta por pagar fue retirada.',
+          });
+        } catch (err: any) {
+          showAlert({
+            type: 'danger',
+            title: 'Error al eliminar',
+            message: err.message,
+          });
+        }
+      },
+    });
+  };
+
+  const handleCreateSupplierBill = async () => {
+    const amount = parseFloat(newBillAmount.replace(/[^0-9]/g, ''));
+    if (isNaN(amount) || amount <= 0 || !newSupplierName.trim()) {
+      showAlert({
+        type: 'warning',
+        title: 'Datos incompletos',
+        message: 'Por favor ingresa el nombre del proveedor y un monto válido mayor a $0.',
+      });
+      return;
+    }
+
+    try {
+      await supplierRepository.createBill({
+        supplierName: newSupplierName.trim(),
+        totalAmount: amount,
+        isPaid: false,
+        notes: newBillNotes.trim() || 'Factura pendiente de pago',
+        createdBy: role,
+      });
+
+      setNewSupplierName('');
+      setNewBillAmount('');
+      setNewBillNotes('');
+      setNewBillModalVisible(false);
+      await onRefreshData();
+
+      showAlert({
+        type: 'success',
+        title: 'Factura guardada',
+        message: `Cuenta por pagar de ${formatMoney(amount)} a "${newSupplierName.trim()}" guardada exitosamente.`,
+      });
+    } catch (err: any) {
+      showAlert({
+        type: 'danger',
+        title: 'Error al guardar factura',
+        message: err.message,
+      });
+    }
+  };
+
   const totalDebtInStreet = customers.reduce(
     (sum, c) => sum + (c.current_debt || 0),
     0
@@ -320,6 +425,20 @@ export function DebtorsScreen({
   const customersWithDebtCount = customers.filter(
     (c) => (c.current_debt || 0) > 0
   ).length;
+
+  const totalSupplierDebt = pendingBills.reduce(
+    (sum, b) => sum + (b.total_amount || 0),
+    0
+  );
+
+  const filteredBills = pendingBills.filter((b) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      b.supplier_name.toLowerCase().includes(q) ||
+      (b.notes && b.notes.toLowerCase().includes(q))
+    );
+  });
 
   const filteredCustomers = customers
     .filter((c) => {
@@ -335,107 +454,219 @@ export function DebtorsScreen({
 
   return (
     <View style={styles.container}>
-      {/* Tarjeta Resumen Superior */}
-      <View style={styles.summaryCard}>
-        <View style={styles.summaryRow}>
-          <View>
-            <Text style={styles.summaryLabel}>Total Créditos por Cobrar</Text>
-            <Text style={styles.summaryValue}>
-              {formatMoney(totalDebtInStreet)}
-            </Text>
-          </View>
-          <View style={styles.debtorsCountBadge}>
-            <Text style={styles.debtorsCountNumber}>{customersWithDebtCount}</Text>
-            <Text style={styles.debtorsCountLabel}>clientes con saldo</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Barra de Búsqueda y Botón Nuevo */}
-      <View style={styles.searchBarRow}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="🔍 Buscar por nombre o apodo..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor="#94A3B8"
-        />
+      {/* Selector de Sección: Vecinos Fiados vs Proveedores por Pagar */}
+      <View style={styles.segmentRow}>
         <TouchableOpacity
-          style={styles.newButton}
-          onPress={() => setNewCustomerModalVisible(true)}
+          style={[styles.segmentBtn, activeSection === 'customers' && styles.segmentBtnActive]}
+          onPress={() => {
+            setActiveSection('customers');
+            setSearchQuery('');
+          }}
         >
-          <Text style={styles.newButtonText}>+ Nuevo Vecino</Text>
+          <Text style={[styles.segmentText, activeSection === 'customers' && styles.segmentTextActive]}>
+            📒 Vecinos ({customersWithDebtCount})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segmentBtn, activeSection === 'suppliers' && styles.segmentBtnActive]}
+          onPress={() => {
+            setActiveSection('suppliers');
+            setSearchQuery('');
+          }}
+        >
+          <Text style={[styles.segmentText, activeSection === 'suppliers' && styles.segmentTextActive]}>
+            🚚 Proveedores ({pendingBills.length})
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Lista de Clientes / Cuaderno */}
-      <ScrollView
-        style={styles.listContainer}
-        contentContainerStyle={styles.listContent}
-      >
-        <Text style={styles.listHeaderTitle}>
-          Hojas de la Libreta ({filteredCustomers.length})
-        </Text>
-
-        {filteredCustomers.map((cust) => {
-          const hasDebt = (cust.current_debt || 0) > 0;
-          return (
-            <TouchableOpacity
-              key={cust.id}
-              style={[styles.customerCard, hasDebt && styles.customerCardWithDebt]}
-              onPress={() => openCustomerSheet(cust)}
-            >
-              <View style={{ flex: 1 }}>
-                <View style={styles.nameRow}>
-                  <Text style={styles.customerName}>{cust.name}</Text>
-                  {cust.alias && (
-                    <View style={styles.aliasBadge}>
-                      <Text style={styles.aliasBadgeText}>{cust.alias}</Text>
-                    </View>
-                  )}
-                </View>
-
-                {cust.phone && (
-                  <Text style={styles.customerPhone}>📞 {cust.phone}</Text>
-                )}
-
-                <Text style={styles.cardHint}>Toca para abrir hoja de cuenta</Text>
+      {activeSection === 'customers' ? (
+        <>
+          {/* Tarjeta Resumen Superior Vecinos */}
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryRow}>
+              <View>
+                <Text style={styles.summaryLabel}>Total Créditos por Cobrar</Text>
+                <Text style={styles.summaryValue}>
+                  {formatMoney(totalDebtInStreet)}
+                </Text>
               </View>
+              <View style={styles.debtorsCountBadge}>
+                <Text style={styles.debtorsCountNumber}>{customersWithDebtCount}</Text>
+                <Text style={styles.debtorsCountLabel}>clientes con saldo</Text>
+              </View>
+            </View>
+          </View>
 
-              <View style={styles.debtColumn}>
-                <View
-                  style={[
-                    styles.debtStatusBadge,
-                    hasDebt ? styles.badgeDebt : styles.badgeUpToDate,
-                  ]}
+          {/* Barra de Búsqueda y Botón Nuevo Vecino */}
+          <View style={styles.searchBarRow}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="🔍 Buscar por nombre o apodo..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor="#94A3B8"
+            />
+            <TouchableOpacity
+              style={styles.newButton}
+              onPress={() => setNewCustomerModalVisible(true)}
+            >
+              <Text style={styles.newButtonText}>+ Nuevo Vecino</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Lista de Clientes / Cuaderno */}
+          <ScrollView
+            style={styles.listContainer}
+            contentContainerStyle={styles.listContent}
+          >
+            <Text style={styles.listHeaderTitle}>
+              Hojas de la Libreta ({filteredCustomers.length})
+            </Text>
+
+            {filteredCustomers.map((cust) => {
+              const hasDebt = (cust.current_debt || 0) > 0;
+              return (
+                <TouchableOpacity
+                  key={cust.id}
+                  style={[styles.customerCard, hasDebt && styles.customerCardWithDebt]}
+                  onPress={() => openCustomerSheet(cust)}
                 >
-                  <Text
-                    style={[
-                      styles.debtStatusText,
-                      hasDebt ? styles.textDebt : styles.textUpToDate,
-                    ]}
-                  >
-                    {hasDebt
-                      ? formatMoney(cust.current_debt)
-                      : 'Al día ✅'}
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.customerName}>{cust.name}</Text>
+                      {cust.alias && (
+                        <View style={styles.aliasBadge}>
+                          <Text style={styles.aliasBadgeText}>{cust.alias}</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {cust.phone && (
+                      <Text style={styles.customerPhone}>📞 {cust.phone}</Text>
+                    )}
+
+                    <Text style={styles.cardHint}>Toca para abrir hoja de cuenta</Text>
+                  </View>
+
+                  <View style={styles.debtColumn}>
+                    <View
+                      style={[
+                        styles.debtStatusBadge,
+                        hasDebt ? styles.badgeDebt : styles.badgeUpToDate,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.debtStatusText,
+                          hasDebt ? styles.textDebt : styles.textUpToDate,
+                        ]}
+                      >
+                        {hasDebt
+                          ? formatMoney(cust.current_debt)
+                          : 'Al día ✅'}
+                      </Text>
+                    </View>
+                    {hasDebt && <Text style={styles.debtSub}>Saldo pendiente</Text>}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            {filteredCustomers.length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyIcon}>📖</Text>
+                <Text style={styles.emptyTitle}>No hay clientes encontrados</Text>
+                <Text style={styles.emptySub}>
+                  Puedes registrar un nuevo vecino con el botón superior.
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        </>
+      ) : (
+        <>
+          {/* Tarjeta Resumen Superior Proveedores */}
+          <View style={[styles.summaryCard, { backgroundColor: '#7C2D12' }]}>
+            <View style={styles.summaryRow}>
+              <View>
+                <Text style={styles.summaryLabel}>Total por Pagar a Proveedores</Text>
+                <Text style={[styles.summaryValue, { color: '#FED7AA' }]}>
+                  {formatMoney(totalSupplierDebt)}
+                </Text>
+              </View>
+              <View style={[styles.debtorsCountBadge, { backgroundColor: '#FFEDD5' }]}>
+                <Text style={[styles.debtorsCountNumber, { color: '#C2410C' }]}>{pendingBills.length}</Text>
+                <Text style={[styles.debtorsCountLabel, { color: '#9A3412' }]}>facturas pendientes</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Barra de Búsqueda y Botón Nueva Factura */}
+          <View style={styles.searchBarRow}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="🔍 Buscar proveedor o concepto..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor="#94A3B8"
+            />
+            <TouchableOpacity
+              style={[styles.newButton, { backgroundColor: '#EA580C' }]}
+              onPress={() => setNewBillModalVisible(true)}
+            >
+              <Text style={styles.newButtonText}>+ Factura</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Lista de Facturas por Pagar a Proveedores */}
+          <ScrollView
+            style={styles.listContainer}
+            contentContainerStyle={styles.listContent}
+          >
+            <Text style={styles.listHeaderTitle}>
+              Cuentas por Pagar a Proveedores ({filteredBills.length})
+            </Text>
+
+            {filteredBills.map((b) => (
+              <View key={b.id} style={styles.supplierCard}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.supplierName}>{b.supplier_name}</Text>
+                  <Text style={styles.supplierAmount}>{formatMoney(b.total_amount)}</Text>
+                  <Text style={styles.supplierMeta}>
+                    📅 {new Date(b.created_at).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' })} • {b.notes || 'Factura pendiente'}
                   </Text>
                 </View>
-                {hasDebt && <Text style={styles.debtSub}>Saldo pendiente</Text>}
-              </View>
-            </TouchableOpacity>
-          );
-        })}
 
-        {filteredCustomers.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📖</Text>
-            <Text style={styles.emptyTitle}>No hay clientes encontrados</Text>
-            <Text style={styles.emptySub}>
-              Puedes registrar un nuevo vecino con el botón superior.
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+                <View style={styles.supplierActions}>
+                  <TouchableOpacity
+                    style={styles.supplierPayBtn}
+                    onPress={() => handlePaySupplierBill(b)}
+                  >
+                    <Text style={styles.supplierPayBtnText}>💵 Pagar Caja</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.supplierDeleteBtn}
+                    onPress={() => handleDeleteSupplierBill(b)}
+                  >
+                    <Text style={styles.supplierDeleteBtnText}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+
+            {filteredBills.length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyIcon}>🚚</Text>
+                <Text style={styles.emptyTitle}>Al día con proveedores</Text>
+                <Text style={styles.emptySub}>
+                  No tienes facturas pendientes de pago registradas con repartidores.
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        </>
+      )}
 
       {/* MODAL: Hoja de Libreta del Cliente */}
       <Modal
@@ -787,6 +1018,68 @@ export function DebtorsScreen({
                 onPress={handleCreateCustomer}
               >
                 <Text style={styles.confirmCustomerBtnText}>Crear Vecino</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL: Nueva Factura de Proveedor */}
+      <Modal
+        visible={newBillModalVisible}
+        transparent
+        animationType="slide"
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>🚚 Nueva Cuenta por Pagar</Text>
+            <Text style={styles.modalSubtitle}>
+              Registra una factura pendiente de pago con repartidor o distribuidor.
+            </Text>
+
+            <Text style={styles.inputLabel}>Proveedor o Empresa *</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej: Bimbo, Coca-Cola, Huevos, Harina..."
+              value={newSupplierName}
+              onChangeText={setNewSupplierName}
+              autoFocus
+            />
+
+            <Text style={styles.inputLabel}>Monto de la Factura *</Text>
+            <TextInput
+              style={styles.priceBigInput}
+              keyboardType="numeric"
+              placeholder="$ 0"
+              value={newBillAmount}
+              onChangeText={setNewBillAmount}
+            />
+
+            <Text style={styles.inputLabel}>Nota / Referencia (Opcional)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ej: Factura #1234, pagar el viernes..."
+              value={newBillNotes}
+              onChangeText={setNewBillNotes}
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => {
+                  setNewBillModalVisible(false);
+                  setNewSupplierName('');
+                  setNewBillAmount('');
+                  setNewBillNotes('');
+                }}
+              >
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmCustomerBtn, { backgroundColor: '#EA580C' }]}
+                onPress={handleCreateSupplierBill}
+              >
+                <Text style={styles.confirmCustomerBtnText}>Guardar Factura</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1371,5 +1664,85 @@ const styles = StyleSheet.create({
   confirmCustomerBtnText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+  },
+  segmentRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 8,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentBtnActive: {
+    backgroundColor: '#0F172A',
+  },
+  segmentText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#475569',
+  },
+  segmentTextActive: {
+    color: '#FFFFFF',
+  },
+  supplierCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    borderLeftWidth: 4,
+    borderLeftColor: '#EA580C',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 1,
+  },
+  supplierName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#9A3412',
+  },
+  supplierAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#EA580C',
+    marginTop: 2,
+  },
+  supplierMeta: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 3,
+  },
+  supplierActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 8,
+  },
+  supplierPayBtn: {
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  supplierPayBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  supplierDeleteBtn: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#FEE2E2',
+  },
+  supplierDeleteBtnText: {
+    fontSize: 15,
   },
 });
