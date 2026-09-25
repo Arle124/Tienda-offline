@@ -32,15 +32,19 @@
 
 ## Sesiones Recientes
 
-### 25 de Septiembre de 2026 - Depuración Visual de Emojis en Mostrador/Cabecera y Confirmación en Eliminación de Facturas
+### 25 de Septiembre de 2026 - Desintoxicación Visual en Administración y Rediseño Sobrio del README
+* **Limpieza y Rediseño de Administración ([OwnerScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/owner/OwnerScreen.tsx)):**
+  * Eliminación sistemática de emojis decorativos y clichés de IA en títulos, tarjetas KPI, arqueo de caja y reportes (estrellas, dianas, bolsas de dinero, confeti y duplicaciones de iconos en botones de Excel).
+  * Conservación exclusiva de indicadores funcionales (candado de bloqueo de PIN, semáforos de balance `🟢`/`🔴`/`✅`, iconos de exportar/importar `📤`/`📥` y papelera `🗑️`).
+* **Rediseño Profesional de Documentación ([README.md](file:///home/asher/tienda-offline/README.md)):**
+  * Reescribitura completa del README reflejando fielmente el estado actual del proyecto (v1.3.0): escáner óptico de códigos de barras con cámara, cuentas por pagar a proveedores, copias de seguridad locales a Drive/WhatsApp, términos legales offline y compilación APK con EAS Build.
+  * Estilo editorial elegante, sobrio y técnico, 100% libre de emojis.
 * **Limpieza de Botones de Mostrador ([PosScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/pos/PosScreen.tsx)):**
   * Eliminación de emojis en los botones `Monto Libre` (antes `⚡ Monto Libre`) y `Salida` (antes `💸 Salida`), optimizando el espacio horizontal para que no quede apretado junto a la barra de búsqueda y el escáner de cámara `📷`.
 * **Seguridad en Facturas a Proveedores ([PosScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/pos/PosScreen.tsx), [OwnerScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/owner/OwnerScreen.tsx)):**
   * Incorporación de cuadro de diálogo de confirmación nativo (`Alert.alert`) antes de eliminar cualquier cuenta por pagar a proveedores, evitando borrados accidentales de facturas pendientes con repartidores.
 * **Ajuste de Cabecera Offline ([App.tsx](file:///home/asher/tienda-offline/apps/mobile/App.tsx)):**
   * Actualización del texto del estado de datos: ahora muestra `☁️ <num> cambios por respaldar` o `☁️ Respaldo al día` (en lugar de "cambios por subir" / "al día con la nube"), manteniendo coherencia con el modelo offline-first y los respaldos locales.
-* **Auditoría con Lupa de Emojis en Administración ([OwnerScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/owner/OwnerScreen.tsx)):**
-  * Diagnóstico y plan de desintoxicación visual para eliminar saturación de IA (emojis decorativos innecesarios como estrellas, dianas y confeti) y conservar únicamente los indicadores funcionales.
 
 ### 25 de Septiembre de 2026 - Corrección y Despliegue Completo de Términos y Privacidad (Transición Nativa y Componente Reutilizable)
 * **Componente Independiente de Términos y Privacidad ([LegalTermsModal.tsx](file:///home/asher/tienda-offline/apps/mobile/src/components/LegalTermsModal.tsx)):**

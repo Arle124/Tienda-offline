@@ -1,6 +1,6 @@
-# Tienda Offline-First (El Cuaderno Digital) 🏪📱
+# Tienda Offline-First (Mi Cuaderno Digital)
 
-> **Sistema integral de punto de venta (POS), libreta digital de fiados, control de inventario y arqueo de caja diseñado con arquitectura Offline-First para tiendas de barrio, minimarkets y pequeños comercios.**
+> Sistema integral de punto de venta (POS), libreta de créditos comerciales, cuentas por pagar a proveedores, control de inventario y arqueo de caja. Diseñado bajo una arquitectura de soberanía de datos y funcionamiento autónomo (Offline-First) para pequeños comercios, abarrotes y minimarkets.
 
 [![Expo SDK](https://img.shields.io/badge/Expo-SDK%2057-black?logo=expo&logoColor=white)](https://expo.dev/)
 [![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)](https://reactnative.dev/)
@@ -12,114 +12,128 @@
 
 ---
 
-## 🎯 Filosofía y Propuesta de Valor
+## Principios y Propuesta de Valor
 
-En una tienda de barrio o mostrador de atención rápida, **el negocio no puede detenerse si se cae el internet o falla el servidor**. El Cuaderno Digital está concebido bajo el principio de **Autonomía Total en el Cliente (Offline-First)**:
+En el comercio independiente y las tiendas de mostrador rápido, la operación diaria no puede depender de la estabilidad del internet o de la disponibilidad de un servidor externo. Mi Cuaderno Digital se basa en los siguientes fundamentos arquitectónicos:
 
-* ⚡ **Latencia Cero (0ms):** El 100% de las transacciones (ventas, fiados, abonos, salidas de dinero) se escriben y consultan de forma instantánea en SQLite local dentro del dispositivo móvil.
-* 📶 **Independencia de Red:** La aplicación es 100% funcional sin conexión a internet ni dependencia de servidores activos en el momento de la venta.
-* 🔄 **Sincronización Silenciosa:** Cola de sincronización local que despacha deltas en lotes (*batch*) hacia el backend en PostgreSQL cuando hay conectividad, utilizando resolución determinista *Last-Write-Wins (LWW)*.
-* 🆔 **Identificadores UUID v4 & Soft Deletes:** Cada entidad se genera con ID universal en el dispositivo y las eliminaciones son lógicas (`is_deleted = TRUE`) para garantizar consistencia y replicabilidad en red.
-
----
-
-## 🚀 Módulos y Funcionalidades
-
-### 🛒 1. Mostrador y Punto de Venta (POS)
-* **Venta rápida al contado:** Botones táctiles de productos favoritos y teclado numérico directo para ventas por valor (`+ Varios`).
-* **Atajos de efectivo y vuelto:** Botones rápidos de denominación (`Exacto`, `$10.000`, `$20.000`, `$50.000`) con cálculo automático del cambio y feedback háptico.
-* **Separación de medios de pago:** Soporte nativo para cobros en **Efectivo en Caja** y **Dinero Digital (Nequi / Transferencias bancarias)**.
-* **Salidas de caja ágiles (`💸 Salida`):** Registro en 2 segundos de pagos a camiones distribuidores (Bimbo, Coca-Cola) o compras de insumos (bolsas), afectando inmediatamente el arqueo de caja.
-* **Fiar en 1 toque:** Asignación directa de la cuenta a un cliente de confianza sin formularios burocráticos.
-
-### 📖 2. Cuaderno Digital de Fiados (Cuentas por Cobrar)
-* **Reemplazo de la libreta de papel:** Vista de deudores con cálculo en milisegundos de saldos acumulados y búsqueda rápida.
-* **Ficha detallada del cliente:** Historial tipo extracto con desglose de artículos comprados (nombre, cantidad, precio) y abonos previos.
-* **Abonos atómicos:** Registro ágil de pagos parciales o totales, especificando si ingresan como efectivo al cajón o por transferencia/Nequi.
-* **Envío de estado de cuenta por WhatsApp (`📲 1 Clic`):** Genera y abre un mensaje pre-redactado y amigable con el saldo total y las compras recientes para enviar al cliente.
-
-### 📦 3. Inventario y Control de Existencias ("Semáforo")
-* **Alertas automáticas de existencias:** Clasificación visual de productos con stock agotado o por debajo del umbral mínimo de reposición (`min_stock_alert`).
-* **Descuento de stock en tiempo real:** Cada venta física descuenta inventario automáticamente de forma transaccional.
-* **Resumen "¿Qué se vendió hoy?":** Monitor en tiempo real de artículos despachados durante la jornada con conteo de unidades y subtotales.
-
-### 🔐 4. Arqueo y Cierre Diario de Caja (Modo Dueña)
-* **Protección por PIN de seguridad:** Acceso restringido para dueña o supervisora.
-* **Arqueo físico estricto:** Comparación automática entre el dinero físico contado en cajón y el saldo teórico de caja:
-  $$\text{Efectivo Teórico en Cajón} = \text{Ventas en Efectivo} + \text{Abonos en Efectivo} - \text{Salidas a Proveedores}$$
-* **Tarjeta de Dinero Digital independiente:** Agrupación consolidada de cobros y abonos por Nequi / Transferencia para verificar contra la app bancaria sin descuadrar el cajón físico.
-* **Historial de salidas:** Detalle de comprobantes pagados a distribuidores y repartidores durante el día.
-
-### 📊 5. Motor de Reportes en Excel Nativo (`.xlsx`)
-* **Libros Excel reales con SheetJS:** Adiós a archivos CSV crudos; exporta libros `.xlsx` con anchos de columna automáticos (`!cols`).
-* **Formato de moneda profesional:** Celdas con tipado numérico y formato nativo (`"$"#,##0`) compatibles con fórmulas (`SUMA()`), filtros y tablas dinámicas en Microsoft Excel y Google Sheets.
-* **Exportación modular y Libro Maestro:**
-  * Reporte de Ventas del Día.
-  * Libreta de Cuentas por Cobrar (Fiados).
-  * Reporte de Inventario y Alertas de Stock.
-  * **Libro Maestro Integral:** Archivo consolidado con las 4 hojas de trabajo en un solo documento (*Cierre de Caja*, *Libreta de Fiados*, *Ventas*, *Inventario*).
-* **Compartir directo vía `expo-sharing`:** Envío del reporte por WhatsApp, correo electrónico o guardado en el almacenamiento del dispositivo o PC.
+* **Latencia Cero (0 ms):** Todas las operaciones comerciales (ventas, fiados, abonos, salidas de dinero y recepción de facturas) se ejecutan de manera instantánea sobre SQLite en la memoria local del dispositivo.
+* **Autonomía Operativa Total:** La aplicación funciona al 100% sin conexión a internet ni requerimiento de cuentas en la nube para su uso diario.
+* **Soberanía y Privacidad de Datos:** Los datos contables pertenecen exclusivamente al usuario. No se transmite telemetría, no se analizan patrones de compra ni se comercializa información privada.
+* **Respaldos y Portabilidad Local:** Mecanismo integrado de exportación atómica en formato JSON (.json) compatible con Google Drive, WhatsApp y almacenamiento físico, sin intermediarios ni costos mensuales de servidor.
+* **Sincronización Opcional en Lotes:** Capacidad de sincronización asíncrona hacia backend PostgreSQL cuando exista conectividad, mediante cola de deltas y resolución determinista de conflictos (Last-Write-Wins).
 
 ---
 
-## 🏗️ Arquitectura del Monorepo
+## Módulos del Sistema
+
+### 1. Mostrador y Punto de Venta (POS)
+* **Venta rápida de productos:** Cuadrícula táctil de artículos favoritos y teclado para ventas por monto libre sin registro previo.
+* **Atajos de denominación y vuelto:** Botones rápidos de pago en efectivo (Exacto, 10.000, 20.000, 50.000, etc.) con cálculo instantáneo del cambio y respuesta háptica.
+* **Cobros mixtos:** Separación explícita entre efectivo en cajón y transferencias digitales (Nequi, Daviplata o transferencias bancarias).
+* **Escáner óptico de códigos de barras:** Lectura de códigos estándar (EAN-13, EAN-8, UPC, Code-128, QR) mediante la cámara del dispositivo para incorporación directa al carrito de compras.
+* **Salidas de caja operativas:** Registro de pagos en efectivo a repartidores o compras imprevistas de insumos, descontándose de inmediato del efectivo físico esperado en el arqueo.
+* **Créditos comerciales directos:** Asignación de la venta a la cuenta corriente del cliente en un solo paso.
+
+### 2. Cuaderno Digital de Créditos (Cuentas por Cobrar)
+* **Control de cartera:** Listado consolidado de clientes con saldo pendiente y búsqueda rápida por nombre o apodo.
+* **Historial y estado de cuenta:** Detalle cronológico tipo libreta con desglose de artículos adquiridos a crédito y pagos realizados.
+* **Registro de abonos atómicos:** Cobro parcial o total de la deuda, con registro contable de si ingresó como efectivo a caja o por transferencia bancaria.
+* **Notificación por WhatsApp:** Generación de mensajes estructurados con el balance actualizado y los últimos movimientos para compartir directamente con el cliente.
+
+### 3. Cuentas por Pagar a Proveedores
+* **Gestión de facturas a crédito:** Registro de facturas pendientes con empresas distribuidoras y preventistas (Bimbo, Postobón, Coca-Cola, etc.).
+* **Pago directo desde caja:** Opción de liquidar facturas con el efectivo disponible en mostrador, actualizando de inmediato el cuadre del día.
+* **Protección contra borrado accidental:** Diálogo nativo de confirmación antes de eliminar cualquier comprobante por pagar.
+
+### 4. Inventario y Control de Existencias
+* **Monitoreo de existencias:** Detección de productos agotados o con existencias por debajo del umbral mínimo configurado.
+* **Búsqueda multimodal:** Filtrado instantáneo por nombre de producto o por dígitos de código de barras.
+* **Asignación de códigos por cámara:** Lectura del código de barras desde la ficha del producto para agilizar su posterior cobro en mostrador.
+* **Resumen diario de ventas:** Visualización de las unidades vendidas por artículo durante la jornada en curso.
+
+### 5. Arqueo y Cierre Diario de Caja
+* **Acceso administrativo protegido:** Control de entrada mediante PIN de 4 dígitos para resguardar la información económica.
+* **Cuadre de caja:** Comparación entre el efectivo físico contado en el cajón y el saldo teórico calculado:
+  $$\text{Efectivo Esperado} = \text{Ventas Contado} + \text{Abonos en Efectivo} - \text{Salidas Registradas}$$
+* **Indicadores visuales de balance:** Estados claros para caja cuadrada exactamente, sobrantes o faltantes de dinero.
+* **Separación de ingresos digitales:** Tarjeta independiente para conciliar pagos digitales recibidos en Nequi o cuentas bancarias, evitando descuadres en el cajón físico.
+
+### 6. Motor de Reportes en Microsoft Excel (.xlsx)
+* **Generación nativa sin internet:** Creación directa de archivos `.xlsx` mediante `xlsx-js-style` con formato numérico de moneda (`"$"#,##0`), estilos visuales suaves y anchos de columna dinámicos.
+* **Variedad de reportes:**
+  * Reporte detallado de ventas del día.
+  * Libreta de créditos y estado de cartera de clientes.
+  * Inventario general valorizado y costos de adquisición.
+  * Libro Maestro Integral: Archivo único que consolida las 4 hojas de trabajo (Cierre de Caja, Libreta de Créditos, Ventas e Inventario).
+* **Distribución:** Envío de reportes por WhatsApp, correo electrónico o guardado en el almacenamiento local mediante la hoja de compartir nativa de Android.
+
+### 7. Copias de Seguridad y Respaldo
+* **Exportación atómica:** Generación de un archivo JSON estructurado (`schema_version: 1`) con la totalidad de los datos comerciales (productos, clientes, ventas, créditos, abonos, cuentas por pagar y ajustes).
+* **Restauración segura:** Importación transaccional con validación de esquema para restablecer la tienda en dispositivos nuevos o tras formateos.
+* **Marco legal integrado:** Documento de términos de uso y política de privacidad accesible dentro de la aplicación, adecuado para su publicación en tiendas como Aptoide.
+
+---
+
+## Arquitectura del Monorepo
 
 ```
 tienda-offline/
 ├── apps/
 │   ├── mobile/             # Aplicación móvil en React Native (Expo SDK 57)
 │   │   ├── src/
+│   │   │   ├── components/ # Modales de cámara, términos, alertas y escáner
 │   │   │   ├── database/   # SQLite local (repositorios, esquemas, migraciones)
-│   │   │   ├── screens/    # Pantallas: Mostrador, Fiados, Inventario, Dueña
-│   │   │   ├── utils/      # Generador Excel (.xlsx), helpers crypto y uuid
-│   │   │   └── sync/       # Cola y motor de sincronización offline
-│   │   └── App.tsx         # Contenedor raíz y navegación por pestañas táctiles
+│   │   │   ├── screens/    # Mostrador, Fiados, Inventario y Administración
+│   │   │   ├── services/   # Servicio de respaldo y restauración atómica
+│   │   │   └── utils/      # Generador de reportes Excel (.xlsx) y formateadores
+│   │   ├── app.json        # Configuración de Expo y permisos de Android
+│   │   └── App.tsx         # Contenedor raíz y navegación táctil
 │   │
-│   └── backend/            # Monolito API en Express + TypeScript
-│       ├── src/            # Controladores, rutas y servicios de sincronización
-│       └── Dockerfile      # Contenedor optimizado para backend
+│   └── backend/            # API opcional en Express + TypeScript
+│       ├── src/            # Rutas y controladores de sincronización central
+│       └── Dockerfile      # Contenedor para despliegues de sincronización
 │
 ├── packages/
-│   └── shared/             # Contratos de dominio compartidos y protocolo DTO
+│   └── shared/             # Contratos de dominio comunes (DTOs y modelos)
 │       └── src/
-│           ├── types.ts    # Interfaces de entidades (Product, Customer, Sale, etc.)
-│           └── sync.ts     # Esquemas de Push y Pull para sincronización
+│           ├── types.ts    # Definiciones de tipos (Product, Customer, Sale, Bill)
+│           └── sync.ts     # Protocolo de transferencia Push/Pull
 │
 ├── docker/
 │   ├── docker-compose.yml  # Orquestación de PostgreSQL y Backend
-│   └── init.sql            # Esquema relacional con UUIDs, índices y soft deletes
+│   └── init.sql            # Esquema relacional con UUIDs y soft deletes
 │
 └── docs/
-    ├── Bitacora.md         # Bitácora detallada de hitos y sesiones de desarrollo
-    ├── Overview.md         # Visión general técnica y mapa del monorepo
-    ├── workflows.md        # Especificación de los 5 flujos operativos de mostrador
-    └── architecture.md     # Protocolo de datos y sincronización bidireccional
+    ├── Bitacora.md         # Registro de avances técnicos y decisiones de diseño
+    ├── Overview.md         # Mapa general del monorepo y contexto
+    ├── workflows.md        # Especificación de flujos de mostrador
+    └── architecture.md     # Arquitectura de sincronización y base de datos
 ```
 
 ---
 
-## 🛠️ Tecnologías Principales
+## Tecnologías Utilizadas
 
-| Capa | Tecnologías |
+| Capa | Componentes |
 | :--- | :--- |
-| **Móvil (Frontend)** | React Native 0.86, Expo SDK 57, TypeScript, `expo-sqlite`, `react-native-safe-area-context`, `expo-sharing`, `expo-haptics`, `xlsx` (SheetJS) |
-| **Backend** | Node.js, Express, TypeScript, `tsx` |
-| **Bases de Datos** | **Cliente:** SQLite local (0ms latencia) <br> **Servidor:** PostgreSQL 16 con UUIDs v4 |
+| **Móvil (Cliente Autónomo)** | React Native 0.86, Expo SDK 57, TypeScript, `expo-sqlite`, `expo-camera`, `expo-sharing`, `expo-document-picker`, `expo-file-system`, `expo-haptics`, `xlsx-js-style` |
+| **Backend (Opcional)** | Node.js, Express, TypeScript, `tsx` |
+| **Almacenamiento** | Local: SQLite (0 ms de latencia) / Central: PostgreSQL 16 con UUIDs v4 |
 | **Monorepo** | pnpm Workspaces, TypeScript Project References |
-| **Infraestructura** | Docker & Docker Compose |
+| **Empaquetado Nativo** | EAS Build (Android SDK 36, APK / AAB) |
 
 ---
 
-## 📋 Requisitos Previos
+## Requisitos de Entorno
 
-* **Node.js**: `v20.x` o `v22.x` (LTS recomendado).
-* **pnpm**: `v9.x` o superior (`corepack enable && corepack use pnpm@latest`).
-* **Docker & Docker Compose**: Opcional, necesario para levantar el backend central y PostgreSQL.
-* **Dispositivo Móvil**: Aplicación [Expo Go](https://expo.dev/go) (Android / iOS) para probar en hardware real, o un navegador web.
+* **Node.js:** Versión 20.x o 22.x LTS.
+* **pnpm:** Versión 9.x o superior (`corepack enable && corepack use pnpm@latest`).
+* **Android / Dispositivo:** Dispositivo con Android 8.0 o superior (o Expo Go para desarrollo rápido).
+* **Docker:** Opcional, requerido únicamente si se ejecuta el backend central con PostgreSQL.
 
 ---
 
-## ⚡ Guía de Instalación y Uso Rápido
+## Instalación y Puesta en Marcha
 
 ### 1. Clonar el repositorio e instalar dependencias
 ```bash
@@ -128,62 +142,66 @@ cd tienda-offline
 pnpm install
 ```
 
-### 2. Compilar el paquete de contratos compartidos
+### 2. Compilar contratos compartidos
 ```bash
 pnpm build:shared
 ```
 
-### 3. Ejecutar la aplicación móvil
-Tienes varias formas de ejecutar el frontend móvil:
-
+### 3. Iniciar la aplicación móvil en desarrollo
 ```bash
-# Iniciar servidor de desarrollo de Expo (lector de código QR para Expo Go)
+# Iniciar servidor interactivo de Expo (código QR para Expo Go)
 pnpm mobile
 
-# Iniciar con túnel ngrok (ideal para probar en celular físico fuera de la red local)
+# Iniciar con túnel ngrok (pruebas en hardware físico remoto)
 pnpm mobile:tunnel
 
-# Iniciar en el navegador web (con almacenamiento SQLite emulado)
+# Iniciar versión web local con emulación IndexedDB
 pnpm mobile:web
 ```
 
-### 4. Ejecutar el backend y la base de datos central (Opcional)
+### 4. Compilar APK para distribución en tiendas (Aptoide / Instalación directa)
 ```bash
-# Levantar PostgreSQL y servicios mediante Docker
+cd apps/mobile
+npx eas-cli build --platform android --profile preview --local
+```
+
+### 5. Servicios centrales y base de datos de respaldo (Opcional)
+```bash
+# Iniciar PostgreSQL y Backend con Docker
 pnpm docker:up
 
-# Iniciar el backend en modo desarrollo con recarga en vivo
+# Iniciar servidor Express en desarrollo
 pnpm backend
 
-# Para apagar los servicios Docker
+# Detener contenedores
 pnpm docker:down
 ```
 
 ---
 
-## ⌨️ Scripts Disponibles en el Monorepo
+## Scripts Disponibles
 
-| Comando | Descripción |
+| Comando | Acción |
 | :--- | :--- |
-| `pnpm mobile` | Inicia Expo CLI para la aplicación móvil en modo interactivo. |
-| `pnpm mobile:tunnel` | Inicia Expo mediante túnel seguro (ngrok) para conexión remota. |
-| `pnpm mobile:web` | Compila y sirve la aplicación en el navegador web local. |
-| `pnpm backend` | Inicia el servidor Express en desarrollo con recarga automática (`tsx watch`). |
-| `pnpm build:shared` | Compila el paquete TypeScript `@tienda/shared` a JavaScript y definiciones `.d.ts`. |
-| `pnpm docker:up` | Levanta los contenedores de PostgreSQL y Backend en segundo plano. |
-| `pnpm docker:down` | Detiene y remueve los contenedores de Docker. |
+| `pnpm mobile` | Inicia el entorno de desarrollo de Expo para la app móvil. |
+| `pnpm mobile:tunnel` | Inicia Expo con túnel para conexión remota en red celular. |
+| `pnpm mobile:web` | Ejecuta la aplicación en el navegador web local. |
+| `pnpm backend` | Inicia el servidor Express con recarga en caliente (`tsx watch`). |
+| `pnpm build:shared` | Compila `@tienda/shared` a definiciones y JavaScript. |
+| `pnpm docker:up` | Despliega PostgreSQL y el backend en contenedores Docker. |
+| `pnpm docker:down` | Detiene y remueve los contenedores locales de Docker. |
 
 ---
 
-## 📖 Documentación y Memoria del Proyecto
+## Documentación Técnica
 
-* 📓 [Bitácora de Desarrollo](docs/Bitacora.md): Registro cronológico de cambios, sesiones técnicas y decisiones de implementación.
-* 🗺️ [Visión General](docs/Overview.md): Estructura general del proyecto y enlaces a la base de conocimiento en Obsidian.
-* 🔄 [Arquitectura de Sincronización](docs/architecture.md): Especificación del protocolo bidireccional, resolución LWW y esquema de deltas.
-* 🛍️ [Flujos Operativos](docs/workflows.md): Detalle paso a paso de los 5 momentos clave del mostrador de la tendera.
+* [Bitácora de Desarrollo](docs/Bitacora.md): Registro histórico de cambios, decisiones técnicas y versiones publicadas.
+* [Visión General del Proyecto](docs/Overview.md): Estructura detallada del monorepo y contexto operativo.
+* [Arquitectura de Sincronización](docs/architecture.md): Protocolo de comunicación, estructura de tablas y resolución LWW.
+* [Flujos de Trabajo](docs/workflows.md): Especificación detallada de los procesos de mostrador, cobro y crédito.
 
 ---
 
-## 📄 Licencia
+## Licencia
 
-Este proyecto está licenciado bajo la Licencia ISC. Consulte el repositorio para más detalles.
+Distribuido bajo la Licencia ISC. Consulte el archivo de licencia en el repositorio para mayores detalles.

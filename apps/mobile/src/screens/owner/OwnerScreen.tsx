@@ -423,7 +423,7 @@ export function OwnerScreen({
       {/* Cabecera Administración */}
       <View style={styles.headerCard}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>💼 Panel de Administración y Cierre</Text>
+          <Text style={styles.headerTitle}>Panel de Administración y Cierre</Text>
           <Text style={styles.headerSubtitle}>
             Cierre de caja y salud económica del negocio
           </Text>
@@ -440,7 +440,7 @@ export function OwnerScreen({
       <View style={styles.metricsGrid}>
         {/* Efectivo Físico en Cajón (Arqueo) */}
         <View style={[styles.kpiCard, { backgroundColor: '#DCFCE7', borderColor: '#86EFAC', borderWidth: 1 }]}>
-          <Text style={styles.kpiLabel}>💵 Efectivo Físico que debe haber en Caja Hoy</Text>
+          <Text style={styles.kpiLabel}>Efectivo Físico Esperado en Caja</Text>
           <Text style={[styles.kpiValue, { color: '#166534' }]}>
             {formatMoney(theoreticalCashInDrawer)}
           </Text>
@@ -452,13 +452,13 @@ export function OwnerScreen({
               : ''}
           </Text>
           <Text style={{ fontSize: 11, color: '#15803D', marginTop: 4, fontWeight: '600' }}>
-            🎯 Este es el dinero que debes contar en billetes y monedas en el cajón.
+            Dinero físico a contar en billetes y monedas en el cajón.
           </Text>
         </View>
 
         {/* Dinero Digital en Nequi / Bancos */}
         <View style={[styles.kpiCard, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE', borderWidth: 1, marginTop: 10 }]}>
-          <Text style={[styles.kpiLabel, { color: '#3730A3' }]}>📲 Dinero Digital en Nequi / Bancos Hoy</Text>
+          <Text style={[styles.kpiLabel, { color: '#3730A3' }]}>Dinero Digital (Nequi / Bancos)</Text>
           <Text style={[styles.kpiValue, { color: '#4338CA' }]}>
             {formatMoney(todaySummary?.totalDigitalInNequi || 0)}
           </Text>
@@ -467,7 +467,7 @@ export function OwnerScreen({
             {formatMoney(todaySummary?.totalTransferPaymentsReceived || 0)}
           </Text>
           <Text style={{ fontSize: 11, color: '#6366F1', marginTop: 4, fontWeight: '600' }}>
-            📱 Entró directo a tu aplicación Nequi / Bancolombia. No está en el cajón.
+            Ingresos recibidos por transferencias digitales (fuera de caja física).
           </Text>
         </View>
 
@@ -475,17 +475,17 @@ export function OwnerScreen({
         <View style={[styles.kpiCard, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderWidth: 1, marginTop: 10 }]}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
-              <Text style={[styles.kpiLabel, { color: '#475569' }]}>🌟 Total Ingresos Recaudados Hoy</Text>
+              <Text style={[styles.kpiLabel, { color: '#475569' }]}>Total Ingresos Recaudados Hoy</Text>
               <Text style={[styles.kpiValue, { color: '#0F172A', fontSize: 20 }]}>
                 {formatMoney(todaySummary?.totalRevenueToday || 0)}
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={{ fontSize: 12, color: '#166534', fontWeight: 'bold' }}>
-                💵 Caja: {formatMoney(todaySummary?.totalPhysicalCashInDrawer || 0)}
+                Caja: {formatMoney(todaySummary?.totalPhysicalCashInDrawer || 0)}
               </Text>
               <Text style={{ fontSize: 12, color: '#4338CA', fontWeight: 'bold', marginTop: 2 }}>
-                📲 Nequi: {formatMoney(todaySummary?.totalDigitalInNequi || 0)}
+                Nequi: {formatMoney(todaySummary?.totalDigitalInNequi || 0)}
               </Text>
             </View>
           </View>
@@ -494,14 +494,14 @@ export function OwnerScreen({
         {/* Créditos de Hoy vs Cartera Total */}
         <View style={[styles.kpiRow, { marginTop: 10 }]}>
           <View style={[styles.kpiCardMini, { backgroundColor: '#FEF9C3' }]}>
-            <Text style={styles.kpiMiniLabel}>📝 Crédito Hoy</Text>
+            <Text style={styles.kpiMiniLabel}>Crédito Hoy</Text>
             <Text style={[styles.kpiMiniValue, { color: '#854D0E' }]}>
               {formatMoney(todaySummary?.totalDebtSales || 0)}
             </Text>
           </View>
 
           <View style={[styles.kpiCardMini, { backgroundColor: '#FEE2E2' }]}>
-            <Text style={styles.kpiMiniLabel}>📒 Total Cartera</Text>
+            <Text style={styles.kpiMiniLabel}>Total Cartera</Text>
             <Text style={[styles.kpiMiniValue, { color: '#991B1B' }]}>
               {formatMoney(totalStreetDebt)}
             </Text>
@@ -513,7 +513,7 @@ export function OwnerScreen({
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
               <Text style={[styles.kpiMiniLabel, { color: '#9A3412', fontWeight: 'bold' }]}>
-                🚚 Cuentas por Pagar a Proveedores
+                Cuentas por Pagar a Proveedores
               </Text>
               <Text style={{ fontSize: 11, color: '#C2410C', marginTop: 2 }}>
                 {pendingSupplierBills.length === 1 ? '1 factura pendiente' : `${pendingSupplierBills.length} facturas pendientes`}
@@ -529,7 +529,7 @@ export function OwnerScreen({
         {todayOutflows > 0 && (
           <View style={[styles.kpiCardMini, { backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1, marginTop: 10, width: '100%' }]}>
             <Text style={[styles.kpiMiniLabel, { color: '#991B1B', fontWeight: 'bold', fontSize: 13 }]}>
-              🚚 Salidas de Caja a Proveedores: -{formatMoney(todayOutflows)}
+              Salidas de Caja a Proveedores: -{formatMoney(todayOutflows)}
             </Text>
             {billsPaidToday.map((b) => (
               <Text key={b.id} style={{ fontSize: 12, color: '#7F1D1D', marginTop: 3 }}>
@@ -542,7 +542,7 @@ export function OwnerScreen({
 
       {/* Herramienta: Arqueo / Cuadre de Caja */}
       <View style={styles.sectionBox}>
-        <Text style={styles.sectionTitle}>💰 Cuadre / Arqueo de Caja del Día</Text>
+        <Text style={styles.sectionTitle}>Cuadre y Arqueo de Caja</Text>
         <Text style={styles.sectionSubtitle}>
           Cuenta el efectivo físico en el cajón y compáralo con el sistema
         </Text>
@@ -588,7 +588,7 @@ export function OwnerScreen({
       <View style={styles.sectionBox}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
           <View style={{ flex: 1, marginRight: 8 }}>
-            <Text style={styles.sectionTitle}>🚚 Cuentas por Pagar a Proveedores</Text>
+            <Text style={styles.sectionTitle}>Cuentas por Pagar a Proveedores</Text>
             <Text style={styles.sectionSubtitle}>
               Facturas pendientes de repartidores y distribuidores.
             </Text>
@@ -603,7 +603,6 @@ export function OwnerScreen({
 
         {pendingSupplierBills.length === 0 ? (
           <View style={styles.emptyBillsState}>
-            <Text style={styles.emptyBillsIcon}>🎉</Text>
             <Text style={styles.emptyBillsTitle}>Al día con proveedores</Text>
             <Text style={styles.emptyBillsSub}>No tienes facturas pendientes de pago registradas.</Text>
           </View>
@@ -614,7 +613,7 @@ export function OwnerScreen({
                 <Text style={styles.ownerBillSupplier}>{bill.supplier_name}</Text>
                 <Text style={styles.ownerBillAmount}>{formatMoney(bill.total_amount)}</Text>
                 <Text style={styles.ownerBillDate}>
-                  📅 {new Date(bill.created_at).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' })} • {bill.notes || 'Factura pendiente'}
+                  {new Date(bill.created_at).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' })} • {bill.notes || 'Factura pendiente'}
                 </Text>
               </View>
               <View style={styles.ownerBillActions}>
@@ -622,7 +621,7 @@ export function OwnerScreen({
                   style={styles.ownerPayBillBtn}
                   onPress={() => handlePaySupplierBill(bill)}
                 >
-                  <Text style={styles.ownerPayBillText}>💵 Pagar de Caja</Text>
+                  <Text style={styles.ownerPayBillText}>Pagar con Caja</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.ownerDeleteBillBtn}
@@ -638,7 +637,7 @@ export function OwnerScreen({
 
       {/* Reportes para Contabilidad / Microsoft Excel */}
       <View style={styles.sectionBox}>
-        <Text style={styles.sectionTitle}>📊 Reportes en Microsoft Excel (.xlsx)</Text>
+        <Text style={styles.sectionTitle}>Reportes en Microsoft Excel (.xlsx)</Text>
         <Text style={styles.sectionSubtitle}>
           Hojas de cálculo reales con tablas organizadas, anchos de columna automáticos y formato de moneda. Puedes abrirlas en Excel o enviarlas por WhatsApp.
         </Text>
@@ -652,13 +651,12 @@ export function OwnerScreen({
           >
             <View style={{ flex: 1 }}>
               <Text style={[styles.reportBtnTitle, { color: '#6D28D9' }]}>
-                💼 Libro Maestro Completo (.xlsx)
+                Libro Maestro Completo (.xlsx)
               </Text>
               <Text style={styles.reportBtnDesc}>
                 Las 4 hojas en un solo archivo: Cierre de Caja, Libreta de Créditos, Ventas e Inventario.
               </Text>
             </View>
-            <Text style={styles.reportBtnIcon}>📗</Text>
           </TouchableOpacity>
 
           {/* Reporte de Ventas */}
@@ -669,13 +667,12 @@ export function OwnerScreen({
           >
             <View style={{ flex: 1 }}>
               <Text style={[styles.reportBtnTitle, { color: '#15803D' }]}>
-                📈 Reporte de Ventas (.xlsx)
+                Reporte de Ventas (.xlsx)
               </Text>
               <Text style={styles.reportBtnDesc}>
                 Todas las ventas, cobros de contado, ventas a crédito y desglose de artículos.
               </Text>
             </View>
-            <Text style={styles.reportBtnIcon}>📥</Text>
           </TouchableOpacity>
 
           {/* Reporte de Cartera / Créditos */}
@@ -686,13 +683,12 @@ export function OwnerScreen({
           >
             <View style={{ flex: 1 }}>
               <Text style={[styles.reportBtnTitle, { color: '#B45309' }]}>
-                📒 Libreta de Créditos (.xlsx)
+                Libreta de Créditos (.xlsx)
               </Text>
               <Text style={styles.reportBtnDesc}>
                 Lista de todos los clientes, teléfonos, saldos pendientes y estado de cuenta.
               </Text>
             </View>
-            <Text style={styles.reportBtnIcon}>📥</Text>
           </TouchableOpacity>
 
           {/* Reporte de Inventario */}
@@ -703,20 +699,19 @@ export function OwnerScreen({
           >
             <View style={{ flex: 1 }}>
               <Text style={[styles.reportBtnTitle, { color: '#1D4ED8' }]}>
-                📦 Inventario y Valorización (.xlsx)
+                Inventario y Valorización (.xlsx)
               </Text>
               <Text style={styles.reportBtnDesc}>
                 Existencias, costos de compra, precios de venta y capital total invertido.
               </Text>
             </View>
-            <Text style={styles.reportBtnIcon}>📥</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Copia de Seguridad y Respaldo (Google Drive / WhatsApp) */}
       <View style={styles.sectionBox}>
-        <Text style={styles.sectionTitle}>🛡️ Copias de Seguridad y Respaldo</Text>
+        <Text style={styles.sectionTitle}>Copias de Seguridad y Respaldo</Text>
         <Text style={styles.sectionSubtitle}>
           Tu negocio opera 100% offline. Guarda una copia de seguridad para respaldar tus ventas, deudas e inventario en tu Google Drive personal o envíatela por WhatsApp.
         </Text>
@@ -777,26 +772,26 @@ export function OwnerScreen({
 
         <View style={styles.securityBadge}>
           <Text style={styles.securityBadgeText}>
-            🔒 100% Local y Privado: Tus datos nunca viajan a servidores de terceros sin tu autorización.
+            100% Local y Privado: Tus datos nunca viajan a servidores de terceros sin tu autorización.
           </Text>
         </View>
       </View>
 
       {/* Configuración de Seguridad */}
       <View style={styles.sectionBox}>
-        <Text style={styles.sectionTitle}>⚙️ Seguridad y Configuración</Text>
+        <Text style={styles.sectionTitle}>Seguridad y Configuración</Text>
         <TouchableOpacity
           style={styles.changePinBtn}
           onPress={() => setChangePinModal(true)}
         >
-          <Text style={styles.changePinBtnText}>🔑 Cambiar PIN de Acceso</Text>
+          <Text style={styles.changePinBtnText}>Cambiar PIN de Acceso</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.changePinBtn, { marginTop: 10 }]}
           onPress={() => setLegalTermsVisible(true)}
         >
-          <Text style={styles.changePinBtnText}>📜 Términos de Uso y Política de Privacidad</Text>
+          <Text style={styles.changePinBtnText}>Términos de Uso y Política de Privacidad</Text>
         </TouchableOpacity>
       </View>
 
@@ -804,7 +799,7 @@ export function OwnerScreen({
       <Modal visible={changePinModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>🔑 Cambiar PIN de Administrador</Text>
+            <Text style={styles.modalTitle}>Cambiar PIN de Administrador</Text>
 
             <Text style={styles.inputLabel}>PIN actual *</Text>
             <TextInput
@@ -890,7 +885,7 @@ export function OwnerScreen({
       <Modal visible={newBillModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>🚚 Nueva Cuenta por Pagar</Text>
+            <Text style={styles.modalTitle}>Nueva Cuenta por Pagar a Proveedor</Text>
             <Text style={styles.modalSubtitle}>
               Registra una factura de repartidor o compra a crédito de la tienda.
             </Text>
