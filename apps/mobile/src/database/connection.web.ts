@@ -118,6 +118,16 @@ export class IndexedDBDriver implements IDatabaseDriver {
     });
   }
 
+  async clearStore(store: StoreName): Promise<void> {
+    const db = this.getDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(store, 'readwrite');
+      const req = tx.objectStore(store).clear();
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
   async getMeta(key: string): Promise<string | null> {
     const db = this.getDb();
     return new Promise((resolve, reject) => {

@@ -8,6 +8,7 @@ export interface IDatabaseDriver {
   update<T extends { id: string }>(store: StoreName, id: string, updates: Partial<T>): Promise<T>;
   upsert<T extends { id: string }>(store: StoreName, item: T): Promise<T>;
   delete(store: StoreName, id: string): Promise<void>;
+  clearStore(store: StoreName): Promise<void>;
   getMeta(key: string): Promise<string | null>;
   setMeta(key: string, value: string): Promise<void>;
   transaction<R>(fn: (driver: IDatabaseDriver) => Promise<R>): Promise<R>;

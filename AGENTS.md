@@ -11,6 +11,7 @@
 ## Directrices de Eficiencia de Tokens
 1. **Consulta primero la documentación:** Antes de inspeccionar los módulos de Expo, React Native o Express, consulta `docs/Overview.md` o `docs/Bitacora.md` para entender el protocolo de sincronización y el estado actual. Esto ahorra hasta un 95% de tokens en cada sesión.
 2. **Actualización de bitácora:** Al finalizar un cambio significativo o hito de desarrollo, actualiza la sección de sesiones recientes en `docs/Bitacora.md`.
+3. **Commits atómicos y profesionales:** Tras cada avance exitoso o hito completado y validado (código compilando y probado), realizar de inmediato un commit de git descriptivo, profesional y en español (siguiendo el formato de Conventional Commits: `feat:`, `fix:`, `refactor:`, etc.).
 
 ## Estilo de Desarrollo
 * Mantener la filosofía offline-first: transacciones locales instantáneas en SQLite móvil con sincronización asíncrona hacia PostgreSQL.

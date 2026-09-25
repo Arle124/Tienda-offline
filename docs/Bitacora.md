@@ -32,6 +32,30 @@
 
 ## Sesiones Recientes
 
+### 25 de Septiembre de 2026 - Versión 1.3.0 (versionCode 5): Preparación para Aptoide, Respaldo Local (Drive/WhatsApp) y Marco Legal
+* **Módulo Completo de Copias de Seguridad y Respaldo Local ([backup.service.ts](file:///home/asher/tienda-offline/apps/mobile/src/services/backup.service.ts)):**
+  * **Exportación Atómica:** Empaquetado de toda la base de datos local (clientes, productos, ventas, deudas, abonos, cuentas por pagar y configuraciones) en un sobre JSON estructurado (`schema_version: 1`) con timestamp y conteos de auditoría.
+  * **Integración Nativa con Google Drive y WhatsApp:** Uso de `expo-sharing` para abrir la hoja de compartir nativa de Android, permitiendo al usuario respaldar su tienda en su propia cuenta de Google Drive, enviársela por WhatsApp o guardarla en sus archivos sin requerir servidores externos ni costos de infraestructura ($0/mes).
+  * **Restauración Segura y Transaccional ([expo-document-picker](file:///home/asher/tienda-offline/apps/mobile/package.json)):**
+    * Selector de archivos nativo para importar copias de seguridad previas.
+    * Validación estructural del archivo JSON y ejecución transaccional en SQLite (`clearStore` e inserción secuencial conservando UUIDs y timestamps originales).
+    * Persistencia de la bandera `initial_seed_completed` para evitar que se reinserten datos de ejemplo tras la restauración.
+* **Transformación del Panel de Administración ([OwnerScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/owner/OwnerScreen.tsx)):**
+  * Reemplazo del botón cosmético de sincronización por la sección interactiva **"🛡️ Copias de Seguridad y Respaldo"**.
+  * Acciones: `📤 Crear Copia de Seguridad` y `📥 Restaurar desde Copia (.json)`.
+  * Modal de advertencia y confirmación antes de restaurar para prevenir pérdidas accidentales de datos del día.
+  * Recarga reactiva de estados contables, métricas y arqueo de caja tras la importación.
+* **Términos de Uso y Política de Privacidad Offline ([SettingsModal.tsx](file:///home/asher/tienda-offline/apps/mobile/src/components/SettingsModal.tsx)):**
+  * Inclusión de botón y modal deslizante con el marco legal adaptado a la distribución en Aptoide:
+    * Declaración de soberanía de datos y 100% Offline-First (cero telemetría o venta de datos).
+    * Cláusula de responsabilidad del usuario sobre sus copias de seguridad.
+    * Exención contable/tributaria y alcance de permisos del sistema.
+* **Depuración de Permisos en Tienda ([app.json](file:///home/asher/tienda-offline/apps/mobile/app.json)):**
+  * Eliminación del permiso no utilizado `android.permission.RECORD_AUDIO`, eliminando alertas de seguridad en tiendas alternativas y aumentando la confianza del usuario.
+  * Incremento de versión a `1.3.0` (`versionCode: 5`).
+* **Soporte en Driver de Base de Datos ([adapter.ts](file:///home/asher/tienda-offline/apps/mobile/src/database/adapter.ts), [connection.native.ts](file:///home/asher/tienda-offline/apps/mobile/src/database/connection.native.ts), [connection.web.ts](file:///home/asher/tienda-offline/apps/mobile/src/database/connection.web.ts)):**
+  * Incorporación del método `clearStore(store)` para purgas limpias durante la restauración en SQLite nativo e IndexedDB web.
+
 ### 24 de Septiembre de 2026 - Versión 1.2.0 (versionCode 4): Cuentas por Pagar a Proveedores y Ajuste de Cabecera Móvil
 * **Ajuste y Corrección de Solapamiento en Cabecera Móvil ([App.tsx](file:///home/asher/tienda-offline/apps/mobile/App.tsx)):**
   * El contenedor del título `"Mi Cuaderno Digital"` y subtítulo ahora tiene `flex: 1` con margen derecho controlado y truncado por elipsis (`numberOfLines={1}`).

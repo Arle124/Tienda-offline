@@ -8,6 +8,7 @@ import {
   TextInput,
   Modal,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import {
   UserRole,
@@ -25,6 +26,7 @@ import {
   exportInventoryToXlsx,
   exportCompleteStoreWorkbookToXlsx,
 } from '../../utils/excel';
+import { backupService } from '../../services/backup.service';
 import { useToast } from '../../components/Toast';
 import { useSettings } from '../../context/SettingsContext';
 
@@ -56,6 +58,9 @@ export function OwnerScreen({
   const [billsPaidToday, setBillsPaidToday] = useState<LocalSupplierBill[]>([]);
   const [pendingSupplierBills, setPendingSupplierBills] = useState<LocalSupplierBill[]>(pendingBills);
   const [isExporting, setIsExporting] = useState(false);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreModalVisible, setRestoreModalVisible] = useState(false);
 
   // Modal para crear nueva factura a proveedor
   const [newBillModalVisible, setNewBillModalVisible] = useState(false);
@@ -299,6 +304,53 @@ export function OwnerScreen({
       });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleCreateBackup = async () => {
+    setIsBackingUp(true);
+    try {
+      const filename = await backupService.exportBackup();
+      showToast({
+        type: 'success',
+        title: 'Copia Creada',
+        message: `Copia lista (${filename}). Puedes guardarla en Google Drive o enviarla por WhatsApp.`,
+      });
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Error al respaldar',
+        message: err.message,
+      });
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
+
+  const handleRestoreBackup = async () => {
+    setRestoreModalVisible(false);
+    setIsRestoring(true);
+    try {
+      const result = await backupService.pickAndRestoreBackup();
+      if (!result) {
+        setIsRestoring(false);
+        return;
+      }
+      showToast({
+        type: 'success',
+        title: 'Restauración Exitosa',
+        message: `Se restauraron ${result.counts.customers} clientes, ${result.counts.products} productos y ${result.counts.sales} ventas.`,
+      });
+      await onRefreshData();
+      await loadSummary();
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Error al restaurar',
+        message: err.message,
+      });
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -646,35 +698,71 @@ export function OwnerScreen({
         </View>
       </View>
 
-      {/* Sincronización y Servidor */}
+      {/* Copia de Seguridad y Respaldo (Google Drive / WhatsApp) */}
       <View style={styles.sectionBox}>
-        <Text style={styles.sectionTitle}>☁️ Sincronización en la Nube</Text>
+        <Text style={styles.sectionTitle}>🛡️ Copias de Seguridad y Respaldo</Text>
         <Text style={styles.sectionSubtitle}>
-          Los datos están seguros en SQLite local y se sincronizan con la nube
+          Tu negocio opera 100% offline. Guarda una copia de seguridad para respaldar tus ventas, deudas e inventario en tu Google Drive personal o envíatela por WhatsApp.
         </Text>
 
-        <View style={styles.syncRow}>
-          <Text style={styles.syncCountText}>
-            📦 Registros pendientes por subir:{' '}
-            <Text style={styles.syncCountHighlight}>{pendingCount}</Text>
-          </Text>
-
+        <View style={styles.backupCardContainer}>
+          {/* Crear Copia */}
           <TouchableOpacity
-            style={styles.syncBtn}
-            onPress={async () => {
-              await onRefreshData();
-              showToast({
-                type: 'info',
-                title: 'Sincronización',
-                message:
-                  pendingCount > 0
-                    ? `Se enviaron ${pendingCount} transacciones a la cola de sincronización.`
-                    : 'Todos los datos locales ya están al día.',
-              });
-            }}
+            style={[styles.backupActionBtn, styles.createBackupBtn]}
+            onPress={handleCreateBackup}
+            disabled={isBackingUp || isRestoring}
+            activeOpacity={0.8}
           >
-            <Text style={styles.syncBtnText}>🔄 Actualizar</Text>
+            {isBackingUp ? (
+              <View style={styles.backupLoadingRow}>
+                <ActivityIndicator color="#FFFFFF" size="small" />
+                <Text style={styles.backupLoadingText}>Generando copia...</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.backupBtnIcon}>📤</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.backupBtnTitle}>Crear Copia de Seguridad</Text>
+                  <Text style={styles.backupBtnSub}>
+                    Guarda tus datos en Google Drive, WhatsApp o tus archivos
+                  </Text>
+                </View>
+              </>
+            )}
           </TouchableOpacity>
+
+          {/* Restaurar Copia */}
+          <TouchableOpacity
+            style={[styles.backupActionBtn, styles.restoreBackupBtn]}
+            onPress={() => setRestoreModalVisible(true)}
+            disabled={isBackingUp || isRestoring}
+            activeOpacity={0.8}
+          >
+            {isRestoring ? (
+              <View style={styles.backupLoadingRow}>
+                <ActivityIndicator color="#0F172A" size="small" />
+                <Text style={[styles.backupLoadingText, { color: '#0F172A' }]}>Restaurando...</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.backupBtnIcon}>📥</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.backupBtnTitle, { color: '#0F172A' }]}>
+                    Restaurar desde Copia (.json)
+                  </Text>
+                  <Text style={[styles.backupBtnSub, { color: '#64748B' }]}>
+                    Recupera tu negocio desde un archivo de respaldo previo
+                  </Text>
+                </View>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.securityBadge}>
+          <Text style={styles.securityBadgeText}>
+            🔒 100% Local y Privado: Tus datos nunca viajan a servidores de terceros sin tu autorización.
+          </Text>
         </View>
       </View>
 
@@ -738,6 +826,37 @@ export function OwnerScreen({
                 onPress={handleChangePin}
               >
                 <Text style={styles.savePinBtnText}>Guardar PIN</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL: Confirmar Restauración de Respaldo */}
+      <Modal visible={restoreModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={{ fontSize: 36, textAlign: 'center', marginBottom: 6 }}>⚠️</Text>
+            <Text style={styles.modalTitle}>¿Restaurar Copia de Seguridad?</Text>
+            <Text style={[styles.modalSubtitle, { textAlign: 'center', color: '#B91C1C', fontWeight: '600' }]}>
+              Atención: Esta acción reemplazará los datos actuales del dispositivo con los datos del archivo seleccionado.
+            </Text>
+            <Text style={{ fontSize: 13, color: '#475569', marginBottom: 16, lineHeight: 19, textAlign: 'center' }}>
+              Se restaurarán todos los clientes, deudas, productos, ventas y cuentas por pagar desde el archivo .json. Te recomendamos crear una copia de seguridad antes si deseas conservar las ventas registradas hoy.
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setRestoreModalVisible(false)}
+              >
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.savePinBtn, { backgroundColor: '#DC2626' }]}
+                onPress={handleRestoreBackup}
+              >
+                <Text style={styles.savePinBtnText}>Elegir Archivo y Restaurar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1018,31 +1137,65 @@ const styles = StyleSheet.create({
     color: '#475569',
     marginTop: 4,
   },
-  syncRow: {
+  backupCardContainer: {
+    gap: 10,
+    marginTop: 6,
+  },
+  backupActionBtn: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
   },
-  syncCountText: {
-    fontSize: 13,
-    color: '#334155',
+  createBackupBtn: {
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
-  syncCountHighlight: {
-    fontWeight: 'bold',
-    color: '#D97706',
-  },
-  syncBtn: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
+  restoreBackupBtn: {
+    backgroundColor: '#F8FAFC',
     borderColor: '#CBD5E1',
   },
-  syncBtnText: {
-    fontSize: 12,
+  backupBtnIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  backupBtnTitle: {
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#0F172A',
+    color: '#FFFFFF',
+  },
+  backupBtnSub: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  backupLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    width: '100%',
+    gap: 8,
+  },
+  backupLoadingText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  securityBadge: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  securityBadgeText: {
+    fontSize: 11,
+    color: '#475569',
+    textAlign: 'center',
+    fontWeight: '500',
   },
   changePinBtn: {
     backgroundColor: '#F8FAFC',

@@ -152,6 +152,11 @@ export class SQLiteDriver implements IDatabaseDriver {
     await db.runAsync(`DELETE FROM ${store} WHERE id = ?`, [id]);
   }
 
+  async clearStore(store: StoreName): Promise<void> {
+    const db = this.getDb();
+    await db.runAsync(`DELETE FROM ${store}`);
+  }
+
   async getMeta(key: string): Promise<string | null> {
     const db = this.getDb();
     const row = await db.getFirstAsync<{ value: string }>(
