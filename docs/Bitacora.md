@@ -32,6 +32,22 @@
 
 ## Sesiones Recientes
 
+### 25 de Septiembre de 2026 - Módulo Opcional de Escáner de Códigos de Barras con Cámara y Detección en Mostrador/Inventario
+* **Componente Reutilizable de Cámara ([BarcodeScannerModal.tsx](file:///home/asher/tienda-offline/apps/mobile/src/components/BarcodeScannerModal.tsx)):**
+  * Basado en la API moderna de Expo SDK 57 (`CameraView`, `useCameraPermissions`).
+  * Interfaz de escaneo con marco centrado estilo láser, botón de linterna/flash `🔦`, botón de cierre rápido y feedback háptico exitoso al detectar códigos.
+  * Soporte para estándares universales: EAN-13, EAN-8, UPC-A, UPC-E, Code-128, Code-39 y QR.
+  * Manejo amigable de permisos de cámara sin bloquear la interfaz.
+* **Integración Opcional en Mostrador ([PosScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/pos/PosScreen.tsx)):**
+  * Botón compacto `📷` en la barra de búsqueda superior.
+  * Al escanear un empaque, busca el producto en SQLite local y lo añade de inmediato al carrito de venta con toast y vibración háptica. Si no existe, alerta amigablemente que no está registrado.
+  * Búsqueda por texto compatible con nombres o códigos de barras numéricos.
+* **Integración en Inventario ([InventoryScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/inventory/InventoryScreen.tsx)):**
+  * Campo explícito `Código de Barras (Opcional)` en el modal de alta/edición de producto con botón `📷 Escanear`.
+  * Rellena automáticamente los dígitos leídos evitando tipeo manual y errores.
+  * Texto explicativo que aclara el uso opcional de las barras para cobrar pasando el empaque en el mostrador.
+  * Badge visual `║▌ {barcode}` en las tarjetas del inventario para identificar rápidamente los productos que ya tienen código asociado.
+
 ### 25 de Septiembre de 2026 - Versión 1.3.0 (versionCode 5): Preparación para Aptoide, Respaldo Local (Drive/WhatsApp) y Marco Legal
 * **Módulo Completo de Copias de Seguridad y Respaldo Local ([backup.service.ts](file:///home/asher/tienda-offline/apps/mobile/src/services/backup.service.ts)):**
   * **Exportación Atómica:** Empaquetado de toda la base de datos local (clientes, productos, ventas, deudas, abonos, cuentas por pagar y configuraciones) en un sobre JSON estructurado (`schema_version: 1`) con timestamp y conteos de auditoría.

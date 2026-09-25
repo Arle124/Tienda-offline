@@ -20,6 +20,7 @@ import {
 } from '../../database';
 import { useToast } from '../../components/Toast';
 import { useSettings } from '../../context/SettingsContext';
+import { BarcodeScannerModal } from '../../components/BarcodeScannerModal';
 
 interface PosScreenProps {
   products: LocalProduct[];
@@ -52,6 +53,7 @@ export function PosScreen({
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | undefined>();
   const [receivedCash, setReceivedCash] = useState<number | null>(null);
   const [searchProduct, setSearchProduct] = useState('');
+  const [scannerVisible, setScannerVisible] = useState(false);
 
   // Modal para agregar producto libre / rápido (ej: $3.000 de queso)
   const [freeItemModalVisible, setFreeItemModalVisible] = useState(false);
@@ -400,22 +402,56 @@ export function PosScreen({
     }
   };
 
+  const handleScanBarcode = (barcode: string) => {
+    setScannerVisible(false);
+    const matchedProduct = products.find(
+      (p) => p.barcode && p.barcode.trim().toLowerCase() === barcode.trim().toLowerCase()
+    );
+    if (matchedProduct) {
+      addToCart(matchedProduct);
+      showToast({
+        type: 'success',
+        title: 'Producto añadido',
+        message: `${matchedProduct.name} (${formatMoney(matchedProduct.price)}) agregado al carrito.`,
+      });
+    } else {
+      showToast({
+        type: 'warning',
+        title: 'Código no encontrado',
+        message: `El código ${barcode} no está registrado en ningún producto.`,
+      });
+    }
+  };
+
   const filteredProducts = products.filter((p) => {
     if (!searchProduct.trim()) return true;
-    return p.name.toLowerCase().includes(searchProduct.toLowerCase().trim());
+    const term = searchProduct.toLowerCase().trim();
+    return (
+      p.name.toLowerCase().includes(term) ||
+      (Boolean(p.barcode) && p.barcode!.toLowerCase().includes(term))
+    );
   });
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Barra de Búsqueda y Botón Venta Rápida */}
       <View style={styles.topActionsRow}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="🔍 Buscar producto..."
-          value={searchProduct}
-          onChangeText={setSearchProduct}
-          placeholderTextColor="#94A3B8"
-        />
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="🔍 Buscar producto..."
+            value={searchProduct}
+            onChangeText={setSearchProduct}
+            placeholderTextColor="#94A3B8"
+          />
+          <TouchableOpacity
+            style={styles.scanPosBtn}
+            onPress={() => setScannerVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.scanPosBtnIcon}>📷</Text>
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity
           style={styles.freeItemButton}
           onPress={() => setFreeItemModalVisible(true)}
@@ -934,6 +970,15 @@ export function PosScreen({
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Escáner de Código de Barras con Cámara */}
+      <BarcodeScannerModal
+        visible={scannerVisible}
+        onClose={() => setScannerVisible(false)}
+        onScan={handleScanBarcode}
+        title="Escanear Producto para Cobrar"
+        subtitle="Apunta la cámara al código de barras del producto"
+      />
     </ScrollView>
   );
 }
@@ -952,16 +997,33 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 16,
   },
-  searchInput: {
+  searchContainer: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     borderRadius: 10,
-    paddingHorizontal: 14,
+    paddingRight: 6,
+  },
+  searchInput: {
+    flex: 1,
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 15,
+    fontSize: 14,
     color: '#0F172A',
+  },
+  scanPosBtn: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  scanPosBtnIcon: {
+    fontSize: 16,
   },
   freeItemButton: {
     backgroundColor: '#3B82F6',

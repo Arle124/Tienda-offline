@@ -19,6 +19,7 @@ import {
   TodaySalesSummary,
 } from '../../database';
 import { CustomAlert, AlertType } from '../../components/CustomAlert';
+import { BarcodeScannerModal } from '../../components/BarcodeScannerModal';
 import { useSettings } from '../../context/SettingsContext';
 
 interface InventoryScreenProps {
@@ -42,11 +43,13 @@ export function InventoryScreen({
   const [productModalVisible, setProductModalVisible] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [prodName, setProdName] = useState('');
+  const [prodBarcode, setProdBarcode] = useState('');
   const [prodPrice, setProdPrice] = useState('');
   const [prodCost, setProdCost] = useState('');
   const [prodStock, setProdStock] = useState('');
   const [prodMinAlert, setProdMinAlert] = useState('3');
   const [prodIsFav, setProdIsFav] = useState(false);
+  const [scannerVisible, setScannerVisible] = useState(false);
 
   // Alerta modal personalizada
   const [alertConfig, setAlertConfig] = useState<{
@@ -129,6 +132,7 @@ export function InventoryScreen({
   const openCreateModal = () => {
     setEditingProductId(null);
     setProdName('');
+    setProdBarcode('');
     setProdPrice('');
     setProdCost('');
     setProdStock('');
@@ -140,6 +144,7 @@ export function InventoryScreen({
   const openEditModal = (p: LocalProduct) => {
     setEditingProductId(p.id);
     setProdName(p.name);
+    setProdBarcode(p.barcode || '');
     setProdPrice(p.price.toString());
     setProdCost(p.cost_price ? p.cost_price.toString() : '');
     setProdStock(p.current_stock.toString());
@@ -206,6 +211,7 @@ export function InventoryScreen({
       await productRepository.save({
         id: editingProductId || undefined,
         name: prodName.trim(),
+        barcode: prodBarcode.trim() || undefined,
         price,
         cost_price: cost,
         current_stock: stock,
@@ -239,7 +245,11 @@ export function InventoryScreen({
 
   const filteredProducts = products.filter((p) => {
     if (!searchProduct.trim()) return true;
-    return p.name.toLowerCase().includes(searchProduct.toLowerCase().trim());
+    const term = searchProduct.toLowerCase().trim();
+    return (
+      p.name.toLowerCase().includes(term) ||
+      (Boolean(p.barcode) && p.barcode!.toLowerCase().includes(term))
+    );
   });
 
   return (
@@ -330,6 +340,9 @@ export function InventoryScreen({
                       <Text style={styles.prodName}>{prod.name}</Text>
                       {prod.is_favorite && (
                         <Text style={styles.starBadge}>⭐ Mostrador</Text>
+                      )}
+                      {Boolean(prod.barcode) && (
+                        <Text style={styles.barcodeBadge}>║▌ {prod.barcode}</Text>
                       )}
                     </View>
 
@@ -517,6 +530,28 @@ export function InventoryScreen({
               </View>
             </View>
 
+            {/* Código de Barras (Opcional) */}
+            <Text style={styles.inputLabel}>Código de Barras (Opcional)</Text>
+            <View style={styles.barcodeInputRow}>
+              <TextInput
+                style={[styles.textInput, { flex: 1, marginBottom: 0 }]}
+                placeholder="Ej: 7702001045128"
+                value={prodBarcode}
+                onChangeText={setProdBarcode}
+                keyboardType="numeric"
+              />
+              <TouchableOpacity
+                style={styles.scanBarcodeBtn}
+                onPress={() => setScannerVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.scanBarcodeBtnText}>📷 Escanear</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.barcodeHint}>
+              💡 Opcional: Escanea con la cámara para cobrar pasando el empaque en el mostrador.
+            </Text>
+
             {/* Switch Favorito / Mostrador */}
             <TouchableOpacity
               style={[
@@ -574,6 +609,18 @@ export function InventoryScreen({
         showCancel={alertConfig.showCancel}
         onConfirm={alertConfig.onConfirm}
         onCancel={alertConfig.onCancel}
+      />
+
+      {/* Modal de Escáner de Código de Barras con Cámara */}
+      <BarcodeScannerModal
+        visible={scannerVisible}
+        onClose={() => setScannerVisible(false)}
+        onScan={(code) => {
+          setProdBarcode(code);
+          setScannerVisible(false);
+        }}
+        title="Escanear Código de Producto"
+        subtitle="Apunta la cámara al código de barras del empaque"
       />
     </View>
   );
@@ -696,6 +743,15 @@ const styles = StyleSheet.create({
     color: '#D97706',
     fontWeight: 'bold',
     backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  barcodeBadge: {
+    fontSize: 10,
+    color: '#0369A1',
+    fontWeight: '600',
+    backgroundColor: '#E0F2FE',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -860,6 +916,31 @@ const styles = StyleSheet.create({
   inputsRow: {
     flexDirection: 'row',
     gap: 10,
+  },
+  barcodeInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  scanBarcodeBtn: {
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanBarcodeBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  barcodeHint: {
+    fontSize: 11,
+    color: '#64748B',
+    marginBottom: 8,
+    fontStyle: 'italic',
   },
   favToggleBtn: {
     padding: 10,
