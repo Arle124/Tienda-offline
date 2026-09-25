@@ -179,28 +179,129 @@ export function SettingsModal({
         style={styles.modalOverlay}
       >
         <View style={styles.modalCard}>
-          {/* Header del Modal */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.headerTitle}>⚙️ Ajustes del Sistema</Text>
-              <Text style={styles.headerSubtitle}>
-                Mi Cuaderno Digital • v1.1.0 (Offline Local)
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onClose}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
-          </View>
+          {legalModalVisible ? (
+            <View style={{ flex: 1 }}>
+              {/* Header Legal */}
+              <View style={styles.header}>
+                <TouchableOpacity
+                  style={styles.backBtn}
+                  onPress={() => setLegalModalVisible(false)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.backBtnText}>← Volver</Text>
+                </TouchableOpacity>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.headerTitle} numberOfLines={1}>
+                    📜 Términos y Privacidad
+                  </Text>
+                  <Text style={styles.headerSubtitle} numberOfLines={1}>
+                    Mi Cuaderno Digital • 100% Offline
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={onClose}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <Text style={styles.closeButtonText}>✕</Text>
+                </TouchableOpacity>
+              </View>
 
-          <ScrollView
-            style={styles.scrollBody}
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-          >
+              <ScrollView
+                style={styles.scrollBody}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: 24 }]}
+              >
+                <View style={styles.legalSection}>
+                  <Text style={styles.legalSectionTitle}>1. Filosofía 100% Offline y Soberanía de Datos</Text>
+                  <Text style={styles.legalSectionText}>
+                    Mi Cuaderno Digital opera bajo el principio de almacenamiento local soberano (Offline-First). Todos los registros de su negocio —incluyendo ventas de mostrador, inventario de existencias, costos, precios, libreta de créditos ("fiados"), nombres y números telefónicos de clientes, facturas de proveedores y cierres de caja— se almacenan única y exclusivamente en la memoria interna de su dispositivo mediante una base de datos local SQLite.
+                  </Text>
+                  <Text style={styles.legalSectionText}>
+                    Los desarrolladores de la aplicación NO recopilamos, no transmitimos a servidores en la nube, no analizamos, no monitoreamos ni comercializamos ninguna información comercial o personal del usuario. Sus datos le pertenecen al 100% a usted.
+                  </Text>
+                </View>
+
+                <View style={styles.legalSection}>
+                  <Text style={styles.legalSectionTitle}>2. Custodia de Información y Copias de Seguridad</Text>
+                  <Text style={styles.legalSectionText}>
+                    Al no existir servidores en la nube obligatorios para operar, la custodia y el respaldo preventivo de la información contable es potestad y responsabilidad del usuario.
+                  </Text>
+                  <Text style={styles.legalSectionText}>
+                    La aplicación dispone de herramientas integradas de "Copia de Seguridad" que le permiten generar un archivo de respaldo completo en formato estándar (.json). Este archivo puede guardarse en su cuenta personal de Google Drive, enviarse a su propio WhatsApp o almacenarse en un medio físico externo seguro.
+                  </Text>
+                  <Text style={styles.legalSectionText}>
+                    Los desarrolladores no asumen responsabilidad civil, económica o administrativa por pérdida de información derivada de daño físico, extravío, robo, formateo o desinstalación de la aplicación en el dispositivo sin una copia de seguridad previa.
+                  </Text>
+                </View>
+
+                <View style={styles.legalSection}>
+                  <Text style={styles.legalSectionTitle}>3. Herramienta de Apoyo y Exención Fiscal</Text>
+                  <Text style={styles.legalSectionText}>
+                    Mi Cuaderno Digital es una herramienta informática de apoyo operativo diseñada para facilitar el control de inventario y cuentas por cobrar en comercios independientes. No constituye un software de facturación electrónica avalado por autoridades tributarias locales ni sustituye el asesoramiento contable o tributario profesional.
+                  </Text>
+                  <Text style={styles.legalSectionText}>
+                    Cada comerciante es el único responsable de cumplir con las declaraciones fiscales, facturación y normativas comerciales vigentes en su respectivo país.
+                  </Text>
+                </View>
+
+                <View style={styles.legalSection}>
+                  <Text style={styles.legalSectionTitle}>4. Permisos del Dispositivo y Transparencia</Text>
+                  <Text style={styles.legalSectionText}>
+                    La aplicación únicamente solicita los permisos técnicos estrictamente indispensables para su funcionamiento operativo:
+                  </Text>
+                  <Text style={styles.legalSectionText}>
+                    • <Text style={{ fontWeight: 'bold' }}>Cámara (Opcional):</Text> Utilizada exclusivamente cuando el comerciante activa el escáner de códigos de barras para cobrar o registrar productos.
+                  </Text>
+                  <Text style={styles.legalSectionText}>
+                    • <Text style={{ fontWeight: 'bold' }}>Almacenamiento y Compartir:</Text> Utilizado únicamente para exportar los reportes en Microsoft Excel (.xlsx) y los archivos de respaldo cuando el usuario lo solicita expresamente.
+                  </Text>
+                  <Text style={styles.legalSectionText}>
+                    La aplicación no graba audio, no accede a la ubicación geográfica ni solicita permisos invasivos de segundo plano.
+                  </Text>
+                </View>
+
+                <View style={styles.legalSection}>
+                  <Text style={styles.legalSectionTitle}>5. Licencia y Modificaciones</Text>
+                  <Text style={styles.legalSectionText}>
+                    Se concede al comerciante una licencia de uso personal y comercial para la gestión de su negocio. Nos reservamos el derecho de actualizar estas directrices para reflejar mejoras operativas o legales en futuras versiones de la aplicación.
+                  </Text>
+                </View>
+              </ScrollView>
+
+              <View style={styles.footer}>
+                <TouchableOpacity
+                  style={[styles.saveSettingsButton, { backgroundColor: '#0F172A' }]}
+                  onPress={() => setLegalModalVisible(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.saveSettingsButtonText}>← Volver a Ajustes</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View style={{ flex: 1 }}>
+              {/* Header del Modal */}
+              <View style={styles.header}>
+                <View>
+                  <Text style={styles.headerTitle}>⚙️ Ajustes del Sistema</Text>
+                  <Text style={styles.headerSubtitle}>
+                    Mi Cuaderno Digital • v1.3.0 (Offline Local)
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={onClose}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <Text style={styles.closeButtonText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                style={styles.scrollBody}
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+              >
             {/* SECCIÓN 1: PREFERENCIAS DEL DISPOSITIVO (ACCESIBLE PARA TODOS) */}
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>📱 Preferencias del Dispositivo</Text>
@@ -476,83 +577,14 @@ export function SettingsModal({
                   💾 Guardar Cambios del Negocio
                 </Text>
               </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </KeyboardAvoidingView>
-
-      {/* MODAL: Términos y Condiciones / Política de Privacidad */}
-      <Modal visible={legalModalVisible} transparent animationType="slide">
-        <View style={styles.legalOverlay}>
-          <View style={styles.legalCard}>
-            <View style={styles.legalHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.legalTitle}>📜 Términos y Privacidad</Text>
-                <Text style={styles.legalSubtitle}>Mi Cuaderno Digital • 100% Offline-First</Text>
               </View>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setLegalModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.legalScroll} contentContainerStyle={styles.legalContent}>
-              <View style={styles.legalSection}>
-                <Text style={styles.legalSectionTitle}>1. Filosofía Offline y Privacidad Absoluta</Text>
-                <Text style={styles.legalSectionText}>
-                  Mi Cuaderno Digital opera bajo un modelo 100% local (Offline-First). Todos los datos comerciales, inventarios, transacciones de ventas, listas de clientes, deudas por cobrar y teléfonos se almacenan única y exclusivamente en la memoria interna de su dispositivo mediante SQLite local.
-                </Text>
-                <Text style={styles.legalSectionText}>
-                  Los desarrolladores NO recopilan, no transmiten a servidores remotos, no analizan ni comercializan ningún dato personal o comercial ingresado en la aplicación.
-                </Text>
-              </View>
-
-              <View style={styles.legalSection}>
-                <Text style={styles.legalSectionTitle}>2. Custodia de Datos y Copias de Seguridad</Text>
-                <Text style={styles.legalSectionText}>
-                  Al no existir servidores centrales de almacenamiento obligatorios, la custodia y respaldo de la información es responsabilidad del usuario.
-                </Text>
-                <Text style={styles.legalSectionText}>
-                  La aplicación proporciona herramientas nativas de "Copia de Seguridad" que permiten exportar un archivo de respaldo para ser guardado en su cuenta personal de Google Drive, enviado por WhatsApp o almacenado en un medio seguro. Se recomienda generar respaldos periódicamente.
-                </Text>
-                <Text style={styles.legalSectionText}>
-                  Los desarrolladores no asumen responsabilidad por pérdida de información derivada de daño físico, extravío, formateo o desinstalación del aplicativo sin una copia de seguridad previa.
-                </Text>
-              </View>
-
-              <View style={styles.legalSection}>
-                <Text style={styles.legalSectionTitle}>3. Uso y Exención de Responsabilidad Fiscal</Text>
-                <Text style={styles.legalSectionText}>
-                  Esta aplicación se distribuye como herramienta de apoyo operativo para la administración independiente de pequeños comercios. No constituye un software contable o tributario oficial. Cada comerciante es responsable del cumplimiento de sus obligaciones legales y tributarias locales.
-                </Text>
-              </View>
-
-              <View style={styles.legalSection}>
-                <Text style={styles.legalSectionTitle}>4. Permisos del Dispositivo</Text>
-                <Text style={styles.legalSectionText}>
-                  • Cámara: Se solicita únicamente para la lectura óptica de códigos de barras o fotos de recibos cuando el usuario lo active.
-                </Text>
-                <Text style={styles.legalSectionText}>
-                  • Almacenamiento y Compartir: Se utiliza exclusivamente para generar y compartir los reportes en Microsoft Excel (.xlsx) y los archivos de respaldo solicitados por el usuario.
-                </Text>
-              </View>
-            </ScrollView>
-
-            <View style={styles.legalFooter}>
-              <TouchableOpacity
-                style={styles.legalAcceptBtn}
-                onPress={() => setLegalModalVisible(false)}
-              >
-                <Text style={styles.legalAcceptBtnText}>Entendido y Aceptar</Text>
-              </TouchableOpacity>
-            </View>
+            )}
           </View>
-        </View>
-      </Modal>
-    </Modal>
-  );
+        )}
+      </View>
+    </KeyboardAvoidingView>
+  </Modal>
+);
 }
 
 const styles = StyleSheet.create({
@@ -565,8 +597,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    height: '90%',
     maxHeight: '92%',
-    minHeight: '60%',
     display: 'flex',
   },
   header: {
@@ -602,6 +634,19 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: '#CBD5E1',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  backBtn: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  backBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: 'bold',
   },
   scrollBody: {
@@ -913,44 +958,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
-  legalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  legalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    width: '100%',
-    maxHeight: '85%',
-    overflow: 'hidden',
-  },
-  legalHeader: {
-    backgroundColor: '#0F172A',
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  legalTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  legalSubtitle: {
-    color: '#94A3B8',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  legalScroll: {
-    flex: 1,
-  },
-  legalContent: {
-    padding: 18,
-  },
   legalSection: {
     marginBottom: 16,
   },
@@ -965,22 +972,5 @@ const styles = StyleSheet.create({
     color: '#475569',
     lineHeight: 18,
     marginBottom: 6,
-  },
-  legalFooter: {
-    padding: 14,
-    borderTopWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-  },
-  legalAcceptBtn: {
-    backgroundColor: '#0F172A',
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  legalAcceptBtnText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 14,
   },
 });

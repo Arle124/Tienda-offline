@@ -27,6 +27,7 @@ import {
   exportCompleteStoreWorkbookToXlsx,
 } from '../../utils/excel';
 import { backupService } from '../../services/backup.service';
+import { LegalTermsModal } from '../../components/LegalTermsModal';
 import { useToast } from '../../components/Toast';
 import { useSettings } from '../../context/SettingsContext';
 
@@ -61,6 +62,7 @@ export function OwnerScreen({
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [restoreModalVisible, setRestoreModalVisible] = useState(false);
+  const [legalTermsVisible, setLegalTermsVisible] = useState(false);
 
   // Modal para crear nueva factura a proveedor
   const [newBillModalVisible, setNewBillModalVisible] = useState(false);
@@ -775,6 +777,13 @@ export function OwnerScreen({
         >
           <Text style={styles.changePinBtnText}>🔑 Cambiar PIN de Acceso</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.changePinBtn, { marginTop: 10 }]}
+          onPress={() => setLegalTermsVisible(true)}
+        >
+          <Text style={styles.changePinBtnText}>📜 Términos de Uso y Política de Privacidad</Text>
+        </TouchableOpacity>
       </View>
 
       {/* MODAL: Cambiar PIN */}
@@ -920,6 +929,12 @@ export function OwnerScreen({
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Términos y Condiciones / Política de Privacidad */}
+      <LegalTermsModal
+        visible={legalTermsVisible}
+        onClose={() => setLegalTermsVisible(false)}
+      />
     </ScrollView>
   );
 }

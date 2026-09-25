@@ -32,6 +32,15 @@
 
 ## Sesiones Recientes
 
+### 25 de Septiembre de 2026 - Corrección y Despliegue Completo de Términos y Privacidad (Transición Nativa y Componente Reutilizable)
+* **Componente Independiente de Términos y Privacidad ([LegalTermsModal.tsx](file:///home/asher/tienda-offline/apps/mobile/src/components/LegalTermsModal.tsx)):**
+  * Creación de un componente modal autónomo con las 5 cláusulas legales completas: filosofía 100% Offline-First (cero servidores remotos), custodia y responsabilidad de copias de seguridad del usuario, exención fiscal/contable para pequeños comercios, alcance y justificación de permisos (cámara y almacenamiento), y licencia de uso.
+* **Solución de Colisión de Modales Anidados en Android ([SettingsModal.tsx](file:///home/asher/tienda-offline/apps/mobile/src/components/SettingsModal.tsx)):**
+  * Se eliminó el `<Modal>` anidado dentro de otro `<Modal>` que en el sistema operativo Android provocaba que la ventana de términos no se desplegara al tocar el botón.
+  * Se sustituyó por una transición de vista reactiva dentro de la misma tarjeta del modal, mostrando el encabezado con botón `← Volver`, el texto legal en scroll y botón de regreso a ajustes.
+* **Acceso Directo desde Panel de Administración ([OwnerScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/owner/OwnerScreen.tsx)):**
+  * Incorporación del botón `📜 Términos de Uso y Política de Privacidad` en la sección de *Seguridad y Configuración* del panel de administración, permitiendo consultar el marco legal directamente desde la gestión administrativa.
+
 ### 25 de Septiembre de 2026 - Módulo Opcional de Escáner de Códigos de Barras con Cámara y Detección en Mostrador/Inventario
 * **Componente Reutilizable de Cámara ([BarcodeScannerModal.tsx](file:///home/asher/tienda-offline/apps/mobile/src/components/BarcodeScannerModal.tsx)):**
   * Basado en la API moderna de Expo SDK 57 (`CameraView`, `useCameraPermissions`).
