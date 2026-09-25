@@ -9,6 +9,7 @@ import {
   Modal,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import {
   UserRole,
@@ -118,23 +119,36 @@ export function OwnerScreen({
     }
   };
 
-  const handleDeleteSupplierBill = async (billId: string) => {
-    try {
-      await supplierRepository.softDelete(billId);
-      showToast({
-        type: 'info',
-        title: 'Factura eliminada',
-        message: 'La cuenta por pagar fue eliminada.',
-      });
-      await onRefreshData();
-      await loadSummary();
-    } catch (err: any) {
-      showToast({
-        type: 'error',
-        title: 'Error al eliminar',
-        message: err.message,
-      });
-    }
+  const handleDeleteSupplierBill = (bill: LocalSupplierBill) => {
+    Alert.alert(
+      '¿Eliminar factura?',
+      `¿Deseas retirar la cuenta por pagar de ${formatMoney(bill.total_amount)} a "${bill.supplier_name}"?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sí, eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await supplierRepository.softDelete(bill.id);
+              showToast({
+                type: 'info',
+                title: 'Factura eliminada',
+                message: 'La cuenta por pagar fue eliminada.',
+              });
+              await onRefreshData();
+              await loadSummary();
+            } catch (err: any) {
+              showToast({
+                type: 'error',
+                title: 'Error al eliminar',
+                message: err.message,
+              });
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleCreateSupplierBill = async () => {
@@ -612,7 +626,7 @@ export function OwnerScreen({
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.ownerDeleteBillBtn}
-                  onPress={() => handleDeleteSupplierBill(bill.id)}
+                  onPress={() => handleDeleteSupplierBill(bill)}
                 >
                   <Text style={styles.ownerDeleteBillText}>🗑️</Text>
                 </TouchableOpacity>

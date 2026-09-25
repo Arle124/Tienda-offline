@@ -181,10 +181,10 @@ export default function App() {
                 </View>
               </View>
 
-        {/* Barra de sincronización offline */}
+        {/* Barra de estado de respaldo offline */}
         <View style={styles.syncRow}>
           <Text style={styles.syncText}>
-            ☁️ {pendingCount === 0 ? 'Al día con la nube' : `${pendingCount} cambios por subir`}
+            ☁️ {pendingCount === 0 ? 'Respaldo al día' : `${pendingCount} cambios por respaldar`}
           </Text>
         </View>
       </View>

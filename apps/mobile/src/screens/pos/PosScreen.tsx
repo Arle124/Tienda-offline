@@ -8,6 +8,7 @@ import {
   TextInput,
   Modal,
   Platform,
+  Alert,
 } from 'react-native';
 import {
   LocalProduct,
@@ -221,22 +222,35 @@ export function PosScreen({
     }
   };
 
-  const handleDeletePendingBill = async (billId: string) => {
-    try {
-      await supplierRepository.softDelete(billId);
-      showToast({
-        type: 'info',
-        title: 'Factura eliminada',
-        message: 'La cuenta por pagar fue retirada.',
-      });
-      await onSaleCompleted();
-    } catch (err: any) {
-      showToast({
-        type: 'error',
-        title: 'Error al eliminar',
-        message: err.message,
-      });
-    }
+  const handleDeletePendingBill = (bill: LocalSupplierBill) => {
+    Alert.alert(
+      '¿Eliminar factura?',
+      `¿Deseas retirar la cuenta por pagar de ${formatMoney(bill.total_amount)} a "${bill.supplier_name}"?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sí, eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await supplierRepository.softDelete(bill.id);
+              showToast({
+                type: 'info',
+                title: 'Factura eliminada',
+                message: 'La cuenta por pagar fue retirada.',
+              });
+              await onSaleCompleted();
+            } catch (err: any) {
+              showToast({
+                type: 'error',
+                title: 'Error al eliminar',
+                message: err.message,
+              });
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleQuickCreateCustomer = async () => {
@@ -456,7 +470,7 @@ export function PosScreen({
           style={styles.freeItemButton}
           onPress={() => setFreeItemModalVisible(true)}
         >
-          <Text style={styles.freeItemButtonText}>⚡ Monto Libre</Text>
+          <Text style={styles.freeItemButtonText}>Monto Libre</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.outflowButton}
@@ -466,7 +480,7 @@ export function PosScreen({
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Text style={styles.outflowButtonText}>💸 Salida</Text>
+            <Text style={styles.outflowButtonText}>Salida</Text>
             {pendingBills.length > 0 && (
               <View style={styles.outflowBadge}>
                 <Text style={styles.outflowBadgeText}>{pendingBills.length}</Text>
@@ -941,7 +955,7 @@ export function PosScreen({
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={styles.billDeleteBtn}
-                            onPress={() => handleDeletePendingBill(b.id)}
+                            onPress={() => handleDeletePendingBill(b)}
                           >
                             <Text style={styles.billDeleteBtnText}>🗑️</Text>
                           </TouchableOpacity>

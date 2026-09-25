@@ -32,6 +32,16 @@
 
 ## Sesiones Recientes
 
+### 25 de Septiembre de 2026 - Depuración Visual de Emojis en Mostrador/Cabecera y Confirmación en Eliminación de Facturas
+* **Limpieza de Botones de Mostrador ([PosScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/pos/PosScreen.tsx)):**
+  * Eliminación de emojis en los botones `Monto Libre` (antes `⚡ Monto Libre`) y `Salida` (antes `💸 Salida`), optimizando el espacio horizontal para que no quede apretado junto a la barra de búsqueda y el escáner de cámara `📷`.
+* **Seguridad en Facturas a Proveedores ([PosScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/pos/PosScreen.tsx), [OwnerScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/owner/OwnerScreen.tsx)):**
+  * Incorporación de cuadro de diálogo de confirmación nativo (`Alert.alert`) antes de eliminar cualquier cuenta por pagar a proveedores, evitando borrados accidentales de facturas pendientes con repartidores.
+* **Ajuste de Cabecera Offline ([App.tsx](file:///home/asher/tienda-offline/apps/mobile/App.tsx)):**
+  * Actualización del texto del estado de datos: ahora muestra `☁️ <num> cambios por respaldar` o `☁️ Respaldo al día` (en lugar de "cambios por subir" / "al día con la nube"), manteniendo coherencia con el modelo offline-first y los respaldos locales.
+* **Auditoría con Lupa de Emojis en Administración ([OwnerScreen.tsx](file:///home/asher/tienda-offline/apps/mobile/src/screens/owner/OwnerScreen.tsx)):**
+  * Diagnóstico y plan de desintoxicación visual para eliminar saturación de IA (emojis decorativos innecesarios como estrellas, dianas y confeti) y conservar únicamente los indicadores funcionales.
+
 ### 25 de Septiembre de 2026 - Corrección y Despliegue Completo de Términos y Privacidad (Transición Nativa y Componente Reutilizable)
 * **Componente Independiente de Términos y Privacidad ([LegalTermsModal.tsx](file:///home/asher/tienda-offline/apps/mobile/src/components/LegalTermsModal.tsx)):**
   * Creación de un componente modal autónomo con las 5 cláusulas legales completas: filosofía 100% Offline-First (cero servidores remotos), custodia y responsabilidad de copias de seguridad del usuario, exención fiscal/contable para pequeños comercios, alcance y justificación de permisos (cámara y almacenamiento), y licencia de uso.
