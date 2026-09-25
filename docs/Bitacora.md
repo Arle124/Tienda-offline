@@ -52,9 +52,10 @@
     * Implementación de `softDelete` y `hardDelete`.
     * Ordenamiento descendente en `getPendingBills()`.
     * Al liquidarse con `markAsPaid()`, la factura se contabiliza de forma automática en el arqueo diario de caja en `supplierRepository.getTodayPaidOutflows()`.
-* **Incremento de Versión de la Aplicación:**
+* **Incremento de Versión y Compilación Local Exitosa:**
   * `apps/mobile/app.json`: `version: "1.2.0"`, `versionCode: 4`.
   * `apps/mobile/package.json`: `version: "1.2.0"`.
+  * **Compilación Local de APK Autónoma:** Generación exitosa de `build-1790284983977.apk` (~97.9 MB) en 298.3s (~4.9 min) en Fedora local vía EAS CLI. Listo para instalación en dispositivo o distribución.
 
 ### 24 de Septiembre de 2026 - Corrección de Persistencia en Eliminación de Clientes y Productos de Ejemplo (Idempotencia de Precarga)
 * **Diagnóstico de Reaparición de Datos de Ejemplo ([index.ts](file:///home/asher/tienda-offline/apps/mobile/src/database/index.ts)):**
